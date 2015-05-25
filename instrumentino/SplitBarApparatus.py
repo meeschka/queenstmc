@@ -5,11 +5,12 @@ from instrumentino import Instrument
 from instrumentino import cfg
 import time
 from instrumentino.action import SysAction, SysActionParamTime, SysActionParamFloat, SysActionParamInt
-
+from instrumentino.controllers.arduino import Arduino
 from instrumentino.controllers.arduino import SysVarDigitalArduino
 from instrumentino.controllers.arduino.pins import DigitalPins, AnalogPins
 from instrumentino.controllers.arduino.pid_thermistor import PidControlledThermistor
 from instrumentino.controllers.arduino.thermistor import thermistorUnipolar
+from instrumentino.SteadyStateModule import SteadyStateClass
 
 
 '''
@@ -54,6 +55,8 @@ sample4Thermometer = thermistorUnipolar('Sample Temperature 4', (valMin, valMax)
 
 digiPins1 = DigitalPins('digital pins', (SysVarDigitalArduino('Heat Element 1', pinDigiOutHeater1Relay),))
 digiPins2 = DigitalPins('digital pins', (SysVarDigitalArduino('Heat Element 2', pinDigiOutHeater2Relay),))
+
+SteadyState = SteadyStateClass('State',['Varying','Steady'], Arduino)
  
 '''
 *** System actions
@@ -135,13 +138,10 @@ class ActionCloseSystem(SysAction):
 '''
 class System(Instrument):
     def __init__(self):
-        comps = (heatThermistor1, heatThermistor2, sample1Thermometer, sample2Thermometer, sample3Thermometer, sample4Thermometer, digiPins1, digiPins2)
+        comps = (heatThermistor1, heatThermistor2, sample1Thermometer, sample2Thermometer, sample3Thermometer, sample4Thermometer, digiPins1, digiPins2, SteadyState)
         #, sample1Thermometer, sample2Thermometer, sample3Thermometer, sample4Thermometer, digiPins1, digiPins2)
         #comps = (sample1Thermometer, sample2Thermometer, sample3Thermometer, sample4Thermometer,       
-        actions = (SetThermostat1(),
-                   TuneThermostat1(), SetThermostat2(), TuneThermostat2(),
-                   ActionCloseSystem()
-                   )
+        actions = (SetThermostat1(), TuneThermostat1(), SetThermostat2(), TuneThermostat2(), ActionCloseSystem())
         name = 'Lab Toaster'
         description = 'A portable split-bar apparatus'
         version = '1.0'

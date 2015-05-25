@@ -45,7 +45,7 @@ class LogGraphPanel(wx.Panel):
         wx.Panel.__init__(self, parent)
         self.parent = parent
         self.sysComps = sysComps
-        self.dataWriteBulk = 5
+        self.dataWriteBulk = 10
 
         # add controls
         self.cb_freeze = wx.CheckBox(self, -1, "Freeze")
@@ -202,7 +202,7 @@ class LogGraphPanel(wx.Panel):
             
     def FinishUpdate(self):
         self.time += [datetime.now()]
-        self.Order = [1,8,3,4,2,7,5,9,6,0]   #reorganized list of order of desired columns
+        self.Order = [3,4,1,5,0,9,7,10,8,2,6]   #reorganized list of order of desired columns
 
         # write a header with variable names
         if len(self.time) == 1:   
