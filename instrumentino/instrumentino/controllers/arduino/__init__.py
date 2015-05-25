@@ -204,9 +204,7 @@ class Arduino(InstrumentinoController):
             val= [value[1], value[2], value[3], value[4], value[5]]
         result = float(np.average(val))
         result = R[pin]/((1023/result)-1) if result != 0 else 0
-        #result = 10000/((1023/result)-1) if result != None else 0
-            
-        #time.sleep(0.1)
+
         return result if result!= None else 0            
 
     def DigitalWriteHigh(self, pin):
@@ -617,14 +615,14 @@ class SysCompArduino(SysComp):
             
 '''
 class SysVarPidRelayArduino(SysVarAnalog):
-'''
-    '''
+    
+    ''
     An Arduino variable that uses the PID Arduino library to turn a relay for the PID control.
     Example: a heating element to be turned on/off to regulate the temperature
     
     It shows an analog variable to set and read the PID controlled quantity (e.g. the temperature) 
-    '''
-    '''
+    ''
+    
     def __init__(self, name, range, pidVar, windowSizeMs, kp, ki, kd, pinAnalIn, pinDigiOut, compName='', helpLine='', units='', PreSetFunc=None, pinInVoltsMax=5, pinInVoltsMin=0, PostGetFunc=None):
         SysVarAnalog.__init__(self, name, range, Arduino, compName, helpLine, True, units, PreSetFunc, PostGetFunc)
         self.pinAnalIn = pinAnalIn

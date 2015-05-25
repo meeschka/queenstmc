@@ -16,6 +16,7 @@ from matplotlib.backends.backend_wxagg import NavigationToolbar2WxAgg as Navigat
 from matplotlib import pyplot as plt
 from matplotlib.dates import DateFormatter, MinuteLocator, SecondLocator,\
     AutoDateFormatter, AutoDateLocator
+from collections import OrderedDict
 
 class Data():
     '''
@@ -44,7 +45,7 @@ class LogGraphPanel(wx.Panel):
         wx.Panel.__init__(self, parent)
         self.parent = parent
         self.sysComps = sysComps
-        self.dataWriteBulk = 10
+        self.dataWriteBulk = 5
 
         # add controls
         self.cb_freeze = wx.CheckBox(self, -1, "Freeze")
@@ -201,16 +202,25 @@ class LogGraphPanel(wx.Panel):
             
     def FinishUpdate(self):
         self.time += [datetime.now()]
+        self.Order = [1,8,3,4,2,7,5,9,6,0]   #reorganized list of order of desired columns
 
         # write a header with variable names
-        if len(self.time) == 1:
-            cfg.signalsLogFile.write('time,' + str(self.allRealData.keys())[1:-1] + '\r')
-            
+        if len(self.time) == 1:   
+            self.oldOrder = self.allRealData.keys() #list of arbitrary keys      
+            self.newOrder = []                      #list for sorted kets
+            for w in self.Order:                    #loop through self.order to sort indices 
+                self.newOrder.append(self.oldOrder[w])
+
+            cfg.signalsLogFile.write('time,' + str(self.newOrder)[1:-1] + '\r') #write headers
+       
         # update the signals' file once in a while
-        if len(self.time) % self.dataWriteBulk == 0:
+        if len(self.time) % self.dataWriteBulk == 0:          
             for idx in range(-1*self.dataWriteBulk,0):
-                cfg.signalsLogFile.write(str(self.time[idx].strftime('%H:%M:%S.%f')) + ',' + str([v.data[idx] for v in self.allRealData.values()])[1:-1] + '\r')
-                        
+                temp = [v.data[idx] for v in self.allRealData.values()] #put data to update in temp list
+                
+                #write data to file in the order of self.order
+                cfg.signalsLogFile.write(str(self.time[idx].strftime('%H:%M:%S.%f')) + ',' + str([temp[x] for x in self.Order])[1:-1] + '\r')
+                    
         # only show the graph when there's at least 2 data points
         if len(self.time) < 2:
             return
@@ -218,8 +228,10 @@ class LogGraphPanel(wx.Panel):
 
     def StopUpdates(self):
         for idx in range(-1*(len(self.time) % self.dataWriteBulk),0):
-            cfg.signalsLogFile.write(str(self.time[idx].strftime('%H:%M:%S.%f')) + ',' + str([v.data[idx] for v in self.allRealData.values()])[1:-1] + '\r')
-            
+            temp = []
+            temp = [v.data[idx] for v in self.allRealData.values()]
+            cfg.signalsLogFile.write(str(self.time[idx].strftime('%H:%M:%S.%f')) + ',' + str([temp[x] for x in self.Order])[1:-1] + '\r')
+                       
         plt.close()
     
     def Redraw(self, firstTime=False):
