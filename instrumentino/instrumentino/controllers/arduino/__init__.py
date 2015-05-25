@@ -8,6 +8,7 @@ import wx
 import serial
 import time
 from threading import Semaphore
+import numpy as np
 
 class Arduino(InstrumentinoController):
     '''
@@ -148,7 +149,7 @@ class Arduino(InstrumentinoController):
         Set the voltage level (using PWM) of a digital output pin using an 8-bit value
         value - between 0-255  
         '''
-        self._sendData('Write %d anal %d'%(pin, value), wait=True)
+        self._sendData('Write %d analog %d'%(pin, value), wait=True)
             
     def SetHighFreqPwm(self, pin):
         '''
@@ -187,6 +188,26 @@ class Arduino(InstrumentinoController):
             return self.pinValuesCache['A' + str(pin)]
         except KeyError:
             self.pinValuesCache['A' + str(pin)] = 0
+        
+    def AnalogReadMultiRes(self, pin):
+        '''
+        Takes the average of 6 values, and converts the analog reading into resistance
+        '''   
+        R = [9900, 9850, 9920, 9850, 9980, 9940]        
+        
+        i = 0
+        value = [0, 0, 0, 0, 0, 0]
+        while i<6:
+            value[i] = self.AnalogRead(pin)
+            i +=1
+            time.sleep(0.05)
+            val= [value[1], value[2], value[3], value[4], value[5]]
+        result = float(np.average(val))
+        result = R[pin]/((1023/result)-1) if result != 0 else 0
+        #result = 10000/((1023/result)-1) if result != None else 0
+            
+        #time.sleep(0.1)
+        return result if result!= None else 0            
 
     def DigitalWriteHigh(self, pin):
         '''
@@ -385,7 +406,18 @@ class Arduino(InstrumentinoController):
             return self.serial.read(300)
         except:
             return ''
-    
+            
+    def thermistorVars(self, pin):
+        '''
+        This function calls the Steinhart-Hart variables for each thermistor. These variables are determined experimentally for each thermistor
+        '''
+
+        A = (0.004045442,0.003903939,0.004027618,0.004044341,0.004059005,0.00397408)
+        B = (-1.4426E-06,2.21645E-05,5.79403E-07,-2.24057E-06,-4.08686E-06,9.56374E-06)
+        C = (-8.47204E-07,-9.45665E-07,-8.52131E-07,-8.40103E-07,-8.29844E-07,-8.80338E-07)
+        
+        varis = (A[pin], B[pin], C[pin])
+        return varis if varis!= None else 0     
     
 # base class and variables
 class SysVarDigitalArduino(SysVarDigital):
@@ -459,6 +491,83 @@ class SysVarAnalogArduino(SysVarAnalog):
         elif self.I2cDac != None:
             self.I2cDac.WriteFraction(fraction, self.GetController())
 
+class SysVarAnalogArduinoThermistor(SysVarAnalog):
+    '''
+    An Arduino analog variable that is used to calculate the thermistor value.
+    I know this is not the best way to do this, but the only way I could make it work was
+    to have my thermistor function call SysVarAnalogArduinoUnipolarThermistor, which calls this function.
+    '''
+    def __init__(self, name, range, pinAnalIn, pinPwmOut=None, SetPolarityPositiveFunc=None, GetPolarityPositiveFunc=None, compName='', helpLine='', units='', PreSetFunc=None, highFreqPWM=False, pinOutVoltsMax=0, pinInVoltsMax=5, pinOutVoltsMin=0, pinInVoltsMin=0, PostGetFunc=None):
+        showEditBox = (pinPwmOut != None) or (PreSetFunc != None)
+        SysVarAnalog.__init__(self, name, range, Arduino, compName, helpLine, showEditBox , units, PreSetFunc, PostGetFunc)
+        self.pinIn = pinAnalIn
+        self.pinOut = pinPwmOut
+        self.SetPolarityPositiveFunc = SetPolarityPositiveFunc
+        self.GetPolarityPositiveFunc = GetPolarityPositiveFunc
+        self.highFreqPWM = highFreqPWM
+        self.pinOutVoltsMax = pinOutVoltsMax
+        self.pinInVoltsMax = pinInVoltsMax
+        self.pinOutVoltsMin = pinOutVoltsMin
+        self.pinInVoltsMin = pinInVoltsMin
+
+        
+    def FirstTimeOnline(self):
+        if self.pinOut != None:
+            self.GetController().PinModeOut(self.pinOut)
+            if self.highFreqPWM:
+                self.GetController().SetHighFreqPwm(self.pinOut)
+        self.GetVaris()
+        
+    def GetVaris(self):
+        self.varis = self.GetController().thermistorVars(self.pinIn)
+        self.A = self.varis[0]
+        self.B = self.varis[1]
+        self.C = self.varis[2]    
+        
+    def GetUnipolarRange(self):
+        return self.GetUnipolarMax() - self.GetUnipolarMin()
+    
+    def GetFunc(self):
+        res = self.GetController().AnalogReadMultiRes(self.pinIn)
+        
+        R1 = (np.log(res)) if res != None else 0
+        R3 = (R1*R1*R1) if R1 != None else 0
+
+        tmp = self.A+self.B*R1+self.C*R3 if R3 != None else 0
+        tmp = 1/tmp if tmp != None and tmp != 0 else 0
+        if np.isnan(tmp):
+            return 0
+        else:
+            return float(tmp-273.15) if tmp !=None else 0 
+           
+       # return res if res != None else 0
+    
+    def SetFunc(self, value):
+        if self.pinOut != None:
+            self.GetController().AnalogWriteFraction(self.pinOut, (abs(value) - self.GetUnipolarMin()) / self.GetUnipolarRange(), self.pinOutVoltsMax, self.pinOutVoltsMin)    
+
+
+class SysVarAnalogArduinoUnipolarThermistor(SysVarAnalogArduinoThermistor):
+    '''
+    A unipolar analog variable, for which the range has to be [X1,X2] or [-X1,-X2].
+    The voltage on the pin (normally 0-5 V) corresponds percentage-wise to the variable's value between X1 and X2 (or -X1 and -X2).
+    '''
+    def __init__(self, name, range, pinAnalIn, pinPwmOut, compName='', helpLine='', units='', PreSetFunc=None, highFreqPWM=False, pinOutVoltsMax=5, pinInVoltsMax=5, pinOutVoltsMin=0, pinInVoltsMin=0, PostGetFunc=None):
+        SysVarAnalogArduinoThermistor.__init__(self, name, range, pinAnalIn, pinPwmOut, self.SetPolarityPositiveFunc, self.GetPolarityPositiveFunc, compName, helpLine, units, PreSetFunc, highFreqPWM, pinOutVoltsMax, pinInVoltsMax, pinOutVoltsMin, pinInVoltsMin, PostGetFunc)
+        self.sign = 1 if range[0] >=0 and range[1] >= 0 else -1
+        
+
+    def SetPolarityPositiveFunc(self):
+        pass
+    
+    def GetPolarityPositiveFunc(self):
+        return self.sign == 1
+
+    def GetUnipolarMin(self):
+        return min(abs(self.range[0]), abs(self.range[1]))
+    
+    def GetUnipolarMax(self):
+        return max(abs(self.range[0]), abs(self.range[1]))
 
 class SysVarAnalogArduinoUnipolar(SysVarAnalogArduino):
     '''
@@ -506,13 +615,15 @@ class SysCompArduino(SysComp):
         for var in self.vars.values():
             var.FirstTimeOnline()
             
-
+'''
 class SysVarPidRelayArduino(SysVarAnalog):
+'''
     '''
     An Arduino variable that uses the PID Arduino library to turn a relay for the PID control.
     Example: a heating element to be turned on/off to regulate the temperature
     
     It shows an analog variable to set and read the PID controlled quantity (e.g. the temperature) 
+    '''
     '''
     def __init__(self, name, range, pidVar, windowSizeMs, kp, ki, kd, pinAnalIn, pinDigiOut, compName='', helpLine='', units='', PreSetFunc=None, pinInVoltsMax=5, pinInVoltsMin=0, PostGetFunc=None):
         SysVarAnalog.__init__(self, name, range, Arduino, compName, helpLine, True, units, PreSetFunc, PostGetFunc)
@@ -546,4 +657,130 @@ class SysVarPidRelayArduino(SysVarAnalog):
         
     def Tune(self, kp, ki, kd):
         self.GetController().PidRelayTune(self.pidVar, kp, ki, kd)
+  '''
+
+class SysVarPidRelayArduino(SysVarAnalog):
+    '''
+    An Arduino variable that uses the PID Arduino library to turn a relay for the PID control.
+    Example: a heating element to be turned on/off to regulate the temperature
+    
+    It shows an analog variable to set and read the PID controlled quantity (e.g. the temperature) 
+    '''
+    def __init__(self, name, range, pidVar, windowSizeMs, kp, ki, kd, pinAnalIn, pinDigiOut, compName='', helpLine='', units='', PreSetFunc=None, pinInVoltsMax=5, pinInVoltsMin=0, PostGetFunc=None):
+        SysVarAnalog.__init__(self, name, range, Arduino, compName, helpLine, True, units, PreSetFunc, PostGetFunc)
+        self.pinAnalIn = pinAnalIn
+        self.pinDigiOut = pinDigiOut
+        self.pinInVoltsMax = pinInVoltsMax
+        self.pinInVoltsMin = pinInVoltsMin
+        self.range = range
+        self.pidVar = pidVar
+        self.windowSizeMs = windowSizeMs
+        self.kp = kp
+        self.ki = ki
+        self.kd = kd
+        Rfix = [9900, 9850, 9920, 9850, 9980, 9940] 
+        self.Rfix = Rfix[pinAnalIn]
+        
+        
+    def FirstTimeOnline(self):
+        self.GetController().PidRelayCreate(self.pidVar, self.pinAnalIn, self.pinDigiOut, self.windowSizeMs, self.kp, self.ki, self.kd)
+        self.varis = self.GetController().thermistorVars(self.pinAnalIn)
+        self.A = self.varis[0]
+        self.B = self.varis[1]
+        self.C = self.varis[2]
+        print("First time online")
+        
+    def GetFunc(self):
+        
+        fraction = self.GetController().AnalogReadFraction(self.pinAnalIn, self.pinInVoltsMax, self.pinInVoltsMin)
+        return (self.range[0] + (self.range[1] - self.range[0]) * fraction) if fraction != None else None
+        
+        #calculate temperature
+        res = self.GetController().AnalogReadMultiRes(self.pinAnalIn)
+        
+        res = (res /(res+ self.Rfix)) * 1023 
+        
+        R1 = (np.log(res)) if res != None else 0
+        R3 = (R1*R1*R1) if R1 != None else 0
+
+        tmp = self.A+self.B*R1+self.C*R3 if R3 != None else 0
+        tmp = (1/tmp)-273.15 if tmp != None and tmp != 0 else 0
+        print("Temperature: ")        
+        print(tmp)
+        
+        if np.isnan(tmp):
+            return 0
+        else:
+            return float(tmp) if tmp !=None else 0
+         
+        return tmp if tmp != None else 0   
+
+
+
             
+    def SetFunc(self, value):
+        # write the setpoint in the range of the analog input pin
+        '''Want to find what analog value would correspond to a given temperature'''
+        '''
+        Original equations:        
+        fraction = (value - self.range[0]) / (self.range[1] - self.range[0])
+        voltage = self.pinInVoltsMin + fraction * (self.pinInVoltsMax - self.pinInVoltsMin)
+        analInCompatibleValue = voltage / Arduino.PIN_VOLT_MAX * Arduino.ANAL_IN_VAL_MAX
+        self.GetController().PidRelaySet(self.pidVar, analInCompatibleValue)
+        '''
+        #if value is T
+        #Calculate desired R from T - find approx R from curve fit
+        #based on difference between T desired and T calculated, change R until within a given threshold
+       
+        R3 = 0
+        R = 10000
+        if np.isnan(R):
+            R=0
+        R1 = (np.log(R)) if R != None else 0
+        R3 = R1*R1*R1 if R3 != None else 0
+        tmp = self.A+self.B*R1+self.C*R3 if R3 != None else 0
+        tmp = (1/tmp)-273.15 if tmp != None and tmp != 0 else 0
+        
+        while abs(tmp-value)>0.5:
+
+            if abs(tmp-value) > 4:
+                deltaR = 400
+            else:
+                deltaR = 100
+
+            if tmp < value:
+                R = R+deltaR
+            elif tmp > value:
+                R = R-deltaR
+            if R==0:
+                R=5
+
+            R1 = float(np.log(np.float(R))) if R != None else 0
+            R3 = R1*R1*R1 if R3 != None else 0
+
+            tmp = self.A+self.B*R1+self.C*R3 if R3 != None else 0
+            tmp = (1/tmp)-273.15 if tmp != None and tmp != 0 else 0  
+            print("Loop")            
+            print(value)
+            print(tmp)
+            print(R)
+
+ 
+        analInCompatibleValue = (R /(R+ self.Rfix)) * 1023
+        
+
+        print analInCompatibleValue
+
+
+        self.GetController().PidRelaySet(self.pidVar, analInCompatibleValue)
+        
+        #based on difference between setTemp and temp, find amount of time t to activate heater
+        
+    def Enable(self, enable):
+        
+        self.GetController().PidRelayEnable(self.pidVar, enable)
+        
+    def Tune(self, kp, ki, kd):
+        self.GetController().PidRelayTune(self.pidVar, kp, ki, kd)
+            
+          
