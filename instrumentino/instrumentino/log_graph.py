@@ -1,22 +1,16 @@
 from __future__ import division
-__author__ = 'yoelk'
 from datetime import datetime
 import wx
-from wx import xrc
 from instrumentino.comp import SysVarAnalog, SysVarDigital
 from instrumentino import cfg
 from itertools import cycle
 import numpy as np
 import matplotlib
 matplotlib.use('WXAgg')
-from matplotlib.figure import Figure
 from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigureCanvas
-from matplotlib.backends.backend_wx import NavigationToolbar2Wx
 from matplotlib.backends.backend_wxagg import NavigationToolbar2WxAgg as NavigationToolbar
 from matplotlib import pyplot as plt
-from matplotlib.dates import DateFormatter, MinuteLocator, SecondLocator,\
-    AutoDateFormatter, AutoDateLocator
-from collections import OrderedDict
+from matplotlib.dates import DateFormatter, MinuteLocator
 
 class Data():
     '''
@@ -45,7 +39,7 @@ class LogGraphPanel(wx.Panel):
         wx.Panel.__init__(self, parent)
         self.parent = parent
         self.sysComps = sysComps
-        self.dataWriteBulk = 10
+        self.dataWriteBulk = 1      #should be 1 to have most recent data for steady state calculation
 
         # add controls
         self.cb_freeze = wx.CheckBox(self, -1, "Freeze")
@@ -203,18 +197,20 @@ class LogGraphPanel(wx.Panel):
     def FinishUpdate(self):
         self.time += [datetime.now()]
         self.Order = [3,4,1,5,0,9,7,10,8,2,6]   #reorganized list of order of desired columns
-
+        cfg.signalsLogFile = open(cfg.LogPath(cfg.timeNow + '.csv'), 'a')
+        
         # write a header with variable names
-        if len(self.time) == 1:   
+        if len(self.time) == 1:
             self.oldOrder = self.allRealData.keys() #list of arbitrary keys      
             self.newOrder = []                      #list for sorted kets
+            
             for w in self.Order:                    #loop through self.order to sort indices 
                 self.newOrder.append(self.oldOrder[w])
 
             cfg.signalsLogFile.write('time,' + str(self.newOrder)[1:-1] + '\r') #write headers
        
         # update the signals' file once in a while
-        if len(self.time) % self.dataWriteBulk == 0:          
+        if len(self.time) % self.dataWriteBulk == 0:
             for idx in range(-1*self.dataWriteBulk,0):
                 temp = [v.data[idx] for v in self.allRealData.values()] #put data to update in temp list
                 
@@ -225,13 +221,16 @@ class LogGraphPanel(wx.Panel):
         if len(self.time) < 2:
             return
         self.Redraw(len(self.time) == 2)
+        
+        cfg.signalsLogFile.close()
 
     def StopUpdates(self):
+        cfg.signalsLogFile = open(cfg.LogPath(cfg.timeNow + '.csv'), 'a')
         for idx in range(-1*(len(self.time) % self.dataWriteBulk),0):
             temp = []
             temp = [v.data[idx] for v in self.allRealData.values()]
             cfg.signalsLogFile.write(str(self.time[idx].strftime('%H:%M:%S.%f')) + ',' + str([temp[x] for x in self.Order])[1:-1] + '\r')
-                       
+        cfg.signalsLogFile.close()                       
         plt.close()
     
     def Redraw(self, firstTime=False):
