@@ -1,12 +1,12 @@
 '(global variable so I don't need to worry about function arguments)
-Dim SSIndex, SSBegin, SSEnd, Iinitial, cols(0 To 6) As Double
+Dim SSIndex, SSBegin, Iinitial, cols(0 To 6) As Double
 
 '   This macro converts a data log file from intrumentino into a mini GUI for analyzing thermal conductivity
 '       Made by Wesley
 '   Things that need to be updated:
-'       remove steady state and associated functions since that has been moved to instrumentino
-'       add ability to use logged steady state data for calculations
 '       finish making button to use steady state temperatures from user-given steady state period
+'       make charts prettier
+'       make code more efficient with loops
 
 Sub HotRocks()
 
@@ -41,8 +41,8 @@ With Worksheets(3)
 i = CDbl(2)
 Do While Not IsEmpty(.Cells(i, 1))  'while the time column is not empty
     j = CDbl(1)
-    For j = 1 To 11
-        Sheets("Data").Cells(i, j).Value = .Cells(i, j).Value   'copy first 11 rows of data
+    For j = 1 To 12
+        Sheets("Data").Cells(i, j).Value = .Cells(i, j).Value   'copy rows of data
     Next j
     i = i + 1
 Loop
@@ -156,77 +156,31 @@ End With
 
 End Sub
 
-Private Sub FindSteady()    'Find Steady State
-
-maxlength = CDbl(0)
-diff = CDbl(0.5)
-beginrow = Iinitial     'global variable for beginning row of data
-Fori = beginrow            'set current index to first available index
-Backi = beginrow
-Forward = True
-Backward = True
-i = beginrow
+Private Sub SteadyStateValues() 'finds last steady state period
+i = 2           'first index of data
 
 With Sheets("Data")
-Do While Not IsEmpty(.Cells(beginrow, 1).Value) 'for all temperatures in data
+lastcell = .Range("L" & i).Text     'variable for state of last cell
 
-    Ival1 = CDbl(.Cells(beginrow, 2).Value)     'set initial temperatures
-    Ival2 = CDbl(.Cells(beginrow, 5).Value)
-    Ival3 = CDbl(.Cells(beginrow, 8).Value)
-    Ival4 = CDbl(.Cells(beginrow, 9).Value)
-    Ival5 = CDbl(.Cells(beginrow, 10).Value)
-    Ival6 = CDbl(.Cells(beginrow, 11).Value)
-    
-    If Forward = True Then
-        Fval1 = CDbl(.Cells(Fori, 2).Value)         'get temperatures at current forward index
-        Fval2 = CDbl(.Cells(Fori, 5).Value)
-        Fval3 = CDbl(.Cells(Fori, 8).Value)
-        Fval4 = CDbl(.Cells(Fori, 9).Value)
-        Fval5 = CDbl(.Cells(Fori, 10).Value)
-        Fval6 = CDbl(.Cells(Fori, 11).Value)
-    End If
-    
-    If Backward = True Then
-        Fval1 = CDbl(.Cells(Backi, 2).Value)        'get temperatures at current backward index
-        Fval2 = CDbl(.Cells(Backi, 5).Value)
-        Fval3 = CDbl(.Cells(Backi, 8).Value)
-        Fval4 = CDbl(.Cells(Backi, 9).Value)
-        Fval5 = CDbl(.Cells(Backi, 10).Value)
-        Fval6 = CDbl(.Cells(Backi, 11).Value)
-    End If
-        
-    'If all current temperatures are within limit of initial
-    If (val1 <= (Ival1 + diff)) And (val1 >= (Ival1 - diff)) _
-            And (val2 <= (Ival2 + diff)) And (val2 >= (Ival2 - diff)) _
-            And (val3 <= (Ival3 + diff)) And (val3 >= (Ival3 - diff)) _
-            And (val4 <= (Ival4 + diff)) And (val4 >= (Ival4 - diff)) _
-            And (val5 <= (Ival5 + diff)) And (val5 >= (Ival5 - diff)) _
-            And (val6 <= (Ival6 + diff)) And (val6 >= (Ival6 - diff)) Then
-        
-        i = i + 1   'increase counter
-    
-    Else    'Otherwise temperature is not steady
-            'If steady state period was longer than last
-        If (.Range("A" & beginrow & ":" & "A" & i).Count) > maxlength Then
-            maxlength = .Range("A" & beginrow & ":" & "A" & i).Count   'update maxlength
-            SSBegin = beginrow      'Calculate middle index of steady state period
-            SSEnd = i
-            SSIndex = (SSBegin + SSEnd) / 2
+    Do While Not IsEmpty(.Cells(i, 12))         'while the row has data
+        If StrComp(.Range("L" & i).Text, " 'Steady'") = 0 Then      'if row is steady
+            SSIndex = i                                             'update steady state index
         End If
+        i = i + 1   'check next row
+    Loop
+    .Cells(SSIndex, 14) = "Steady State Index"      'print indicator in row
 
-        beginrow = beginrow + 1    'Increase beginning row of range by one
-        i = beginrow               'reset i
-    End If
-Loop
+
+    For i = 2 To SSIndex        'for beginning of data until the steady state index
+        x = .Range("L" & i).Text    'get current cell state
+        If (StrComp(lastcell, " 'Varying'") = 0) And (StrComp(x, " 'Steady'") = 0) Then     'if new steady state period started
+            SSBegin = i                                                                     'update steady state beginning index
+        End If
+        lastcell = x    'update last cell state
+        Next i
+    .Cells(SSBegin, 14) = "Steady State Beginning"  'print indicator in row
+        
 End With
-
-'Check final range to see if it's bigger
-If (Worksheets(1).Range("A" & beginrow & ":" & "A" & i).Count) > maxlength Then
-    maxlength = Worksheets(1).Range("A" & beginrow & ":" & "A" & i).Count   'update maxlength
-    SSIndex = (beginrow + i) / 2
-    SSBegin = beginrow
-    SSEnd = i
-End If
 
 End Sub
 
@@ -234,10 +188,10 @@ Private Sub SteadyChart()       'Set up Steady State Temperature Chart
 
 With Charts(3)
     .Type = xlXYScatter                                                                         'chart type
-    .SetSourceData Source:=Worksheets(2).Range("A" & SSBegin & ":" & "A" & SSEnd & "," & _
-     "B" & SSBegin & ":" & "B" & SSEnd & "," & "E" & SSBegin & ":" & "E" & SSEnd & "," & _
-     "H" & SSBegin & ":" & "H" & SSEnd & "," & "I" & SSBegin & ":" & "I" & SSEnd & "," & _
-     "J" & SSBegin & ":" & "J" & SSEnd & "," & "K" & SSBegin & ":" & "K" & SSEnd)
+    .SetSourceData Source:=Worksheets(2).Range("A" & SSBegin & ":" & "A" & SSIndex & "," & _
+     "B" & SSBegin & ":" & "B" & SSIndex & "," & "E" & SSBegin & ":" & "E" & SSIndex & "," & _
+     "H" & SSBegin & ":" & "H" & SSIndex & "," & "I" & SSBegin & ":" & "I" & SSIndex & "," & _
+     "J" & SSBegin & ":" & "J" & SSIndex & "," & "K" & SSBegin & ":" & "K" & SSIndex)
     .HasTitle = True                                                                            'has a title
     .ChartTitle.Text = "Steady State Temperatures"                                              'title name
     .Axes(xlCategory, xlPrimary).HasTitle = True                                                'has x axis title
@@ -360,7 +314,7 @@ Private Sub DeleteFirstDataPoint()
 
 Worksheets(2).Rows(2).Delete
 
-    Call FindSteady         'Find Steady State
+    Call SteadyStateValues         'Find Steady State
     Call OutputsTable       'Setup Outputs Table
     Call CalculateTC        'Calculate Thermal Conductivity
     
@@ -372,7 +326,7 @@ Private Sub Refresh()
     Sheets("Outputs").Cells.ClearContents
     Call InitializeOutputs
     Call ConstantsTable     'Setup Constants Table
-    Call FindSteady         'Find Steady State
+    Call SteadyStateValues
     Call OutputsTable       'Setup Outputs Table
     Call CalculateTC        'Calculate Thermal Conductivity
     Application.ScreenUpdating = True
@@ -400,15 +354,13 @@ End Sub
 Private Sub Inquire()
 
 Iinitial = InputBox("Desired Heater 1 Temperature?")
-Call FindSteady
 Call OutputsTable
 Call CalculateTC
 
 End Sub
 
 Private Sub SetVariables()
-'cols(0) = 2     'columns of original data that have temperatures
-cols(1) = 2
+cols(1) = 2     'columns of original data that have temperatures
 cols(2) = 5
 cols(3) = 8
 cols(4) = 9
