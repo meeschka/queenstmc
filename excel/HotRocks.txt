@@ -1,0 +1,372 @@
+'(global variable so I don't need to worry about function arguments)
+Dim SSIndex, SSBegin, Iinitial, cols(0 To 6) As Double
+
+'   This macro converts a data log file from intrumentino into a mini GUI for analyzing thermal conductivity
+'       Made by Wesley
+'   Things that need to be updated:
+'       finish making button to use steady state temperatures from user-given steady state period
+'       make charts prettier
+'       make code more efficient with loops
+
+Sub HotRocks()
+
+    Application.ScreenUpdating = False
+    Call SetVariables       'Initialize global variables
+    Call AddSheets          'Make sheets, tables and charts
+    Call LoadData           'Copy Data onto "Data" sheet
+    Call FormatSheets       'Make output sheet format changes
+    Call Refresh            'Makes tables, finds steady state, calculates TC
+    Call HeaterChart        'Setup heater temps chart
+    Call SampleChart        'Setup sample temps chart
+    Call SteadyChart        'Setup steady state chart
+    Call AddButtons         'Add Buttons
+    Application.ScreenUpdating = True
+
+End Sub
+
+Private Sub AddSheets() 'Add extra charts and sheets
+
+Worksheets.Add.Name = "Data"
+Worksheets.Add.Name = "Outputs"
+Charts.Add.Name = "Steady State"
+Charts.Add.Name = "Samples"
+Charts.Add.Name = "Heaters"
+
+End Sub
+
+Private Sub LoadData()      'Copy original data into new sheet
+
+Sheets("Data").Cells.ClearContents  'clear sheet
+With Worksheets(3)
+i = CDbl(2)
+Do While Not IsEmpty(.Cells(i, 1))  'while the time column is not empty
+    j = CDbl(1)
+    For j = 1 To 12
+        Sheets("Data").Cells(i, j).Value = .Cells(i, j).Value   'copy rows of data
+    Next j
+    i = i + 1
+Loop
+End With
+Call NewTime
+
+End Sub
+
+Private Sub NewTime()       'recalculates all rows in time column to start at 12:00:00
+
+i = CDbl(2)
+
+Sheets("Data").Activate
+With ActiveSheet
+    InitialTime = .Cells(2, 1).Value        'time that experiment started at
+
+    Do While Not IsEmpty(.Cells(i, 1))      'while time column is not empty
+        .Cells(i, 1).Value = Format(.Cells(i, 1).Value - InitialTime, "hh:mm:ss")   'subtract initial time and reformat
+        i = i + 1   'advance one row
+    Loop
+End With
+End Sub
+
+Private Sub FormatSheets()      'Sheet Formatting
+
+Worksheets(1).Activate
+ActiveWindow.DisplayGridlines = False       'Turn gridlines off
+
+Sheets("Outputs").Rows(4).RowHeight = 30     'Height of table header line
+Sheets("Outputs").Rows(8).RowHeight = 25     'Height of thermal conductivity line
+
+End Sub
+
+Private Sub InitializeOutputs()    'Initialize Outputs Table
+    
+Sheets("Outputs").Activate
+Sheets("Outputs").ListObjects.Add(xlSrcRange, Range("H4:N6"), , xlYes).Name = "Outputs"    'Create "Outputs" table
+
+With Sheets("Outputs").ListObjects("Outputs")
+    .TableStyle = "TableStyleLight1"                            'Set table style
+    .Range.AutoFilter                                           'Turn filter off
+    .HeaderRowRange.HorizontalAlignment = xlCenter              'Center column headers
+    .HeaderRowRange.VerticalAlignment = xlCenter
+    .DataBodyRange.HorizontalAlignment = xlCenter               'Center Data
+    .ListColumns(1).Range.HorizontalAlignment = xlRight         'Set row headers to far right
+End With
+
+End Sub
+
+Private Sub ConstantsTable()    'Setup Constants Tables
+
+Sheets("Outputs").Activate
+Sheets("Outputs").ListObjects.Add(xlSrcRange, Range("B4:E5"), , xlYes).Name = "Constants"   'create "Constants" table
+Sheets("Outputs").Range("Constants[#All]").BorderAround Weight:=xlThin            'Put border around table
+
+With Sheets("Outputs").ListObjects("Constants")
+    .TableStyle = "TableStyleLight1"                                'Set table style
+    .Range.AutoFilter                                               'turn filter off
+    
+    .HeaderRowRange(1) = "Thermal Conductivity of Quartz [kg]"      'Thermal conductivity of quartz
+    .DataBodyRange(1, 1).Value = 1.4
+    .HeaderRowRange(1).ColumnWidth = 20
+
+    .HeaderRowRange(2) = "Thickness of Sample [mm]"                 'Thickness of sample
+    .DataBodyRange(1, 2).Value = 6.94
+    .HeaderRowRange(2).ColumnWidth = 15
+      
+    .HeaderRowRange(3) = "Total Thickness of Standards [mm]"        'Total thickness of standards
+    .DataBodyRange(1, 3).Value = 18.06
+    .HeaderRowRange(3).ColumnWidth = 16
+      
+    .HeaderRowRange(4) = "R value"                                  'R value
+    .DataBodyRange(1, 4).Value = 0.1
+    .HeaderRowRange(4).ColumnWidth = 10
+
+    .HeaderRowRange.HorizontalAlignment = xlCenter                  'Align Text
+    .HeaderRowRange.VerticalAlignment = xlCenter
+    .DataBodyRange.HorizontalAlignment = xlCenter
+    .HeaderRowRange.WrapText = True
+End With
+
+End Sub
+
+Private Sub HeaterChart()   'Add chart for heater temps
+
+With Charts(1)
+    .Type = xlXYScatter                                                 'chart type
+    .SetSourceData Source:=Worksheets(2).Range("A:A, B:B, E:E")         'Data source
+    .HasTitle = True                                                    'has a title
+    .ChartTitle.Text = "Heater Temperatures"                            'title name
+    .Axes(xlCategory, xlPrimary).HasTitle = True                        'has x axis title
+    .Axes(xlCategory, xlPrimary).AxisTitle.Text = "Time"                'x axis title name
+    .Axes(xlValue, xlPrimary).HasTitle = True                           'has y axis title
+    .Axes(xlValue, xlPrimary).AxisTitle.Text = "Temp."                  'y axistitle name
+End With
+
+End Sub
+
+Private Sub SampleChart()   'Add chart for sample temps
+
+With Charts(2)
+    .Type = xlXYScatter                                                     'chart type
+    .SetSourceData Source:=Worksheets(2).Range("A:A, H:H, I:I, J:J, K:K")   'data source
+    .HasTitle = True                                                        'has a title
+    .ChartTitle.Text = "Sample Temperatures"                                'title name
+    .Axes(xlCategory, xlPrimary).HasTitle = True                            'has x axis title
+    .Axes(xlCategory, xlPrimary).AxisTitle.Text = "Time"                    'x axis title name
+    .Axes(xlValue, xlPrimary).HasTitle = True                               'has y axis title
+    .Axes(xlValue, xlPrimary).AxisTitle.Text = "Temp."                      'y axis title name
+End With
+
+End Sub
+
+Private Sub SteadyStateValues() 'finds last steady state period
+i = 2           'first index of data
+
+With Sheets("Data")
+lastcell = .Range("L" & i).Text     'variable for state of last cell
+
+    Do While Not IsEmpty(.Cells(i, 12))         'while the row has data
+        If StrComp(.Range("L" & i).Text, " 'Steady'") = 0 Then      'if row is steady
+            SSIndex = i                                             'update steady state index
+        End If
+        i = i + 1   'check next row
+    Loop
+    .Cells(SSIndex, 14) = "Steady State Index"      'print indicator in row
+
+
+    For i = 2 To SSIndex        'for beginning of data until the steady state index
+        x = .Range("L" & i).Text    'get current cell state
+        If (StrComp(lastcell, " 'Varying'") = 0) And (StrComp(x, " 'Steady'") = 0) Then     'if new steady state period started
+            SSBegin = i                                                                     'update steady state beginning index
+        End If
+        lastcell = x    'update last cell state
+        Next i
+    .Cells(SSBegin, 14) = "Steady State Beginning"  'print indicator in row
+        
+End With
+
+End Sub
+
+Private Sub SteadyChart()       'Set up Steady State Temperature Chart
+
+With Charts(3)
+    .Type = xlXYScatter                                                                         'chart type
+    .SetSourceData Source:=Worksheets(2).Range("A" & SSBegin & ":" & "A" & SSIndex & "," & _
+     "B" & SSBegin & ":" & "B" & SSIndex & "," & "E" & SSBegin & ":" & "E" & SSIndex & "," & _
+     "H" & SSBegin & ":" & "H" & SSIndex & "," & "I" & SSBegin & ":" & "I" & SSIndex & "," & _
+     "J" & SSBegin & ":" & "J" & SSIndex & "," & "K" & SSBegin & ":" & "K" & SSIndex)
+    .HasTitle = True                                                                            'has a title
+    .ChartTitle.Text = "Steady State Temperatures"                                              'title name
+    .Axes(xlCategory, xlPrimary).HasTitle = True                                                'has x axis title
+    .Axes(xlCategory, xlPrimary).AxisTitle.Text = "Time"                                        'x axis title name
+    .Axes(xlValue, xlPrimary).HasTitle = True                                                   'has y axis title
+    .Axes(xlValue, xlPrimary).AxisTitle.Text = "Temp."                                          'y axis title name
+End With
+
+End Sub
+
+Private Sub OutputsTable()
+
+Worksheets(1).Activate
+Worksheets(1).Range("Outputs[#All]").BorderAround Weight:=xlThin    'put border around table
+   
+With Worksheets(1).ListObjects("Outputs")
+    For i = 1 To 6
+        .HeaderRowRange(i + 1).ColumnWidth = 10     'set column width
+        .DataBodyRange(1, i + 1).Value = Worksheets(2).Cells(SSIndex, cols(i)).Value    'put actual steady state temperatures in top row
+    Next i
+    
+    For i = 4 To 7
+        .HeaderRowRange(i) = "Sample " & (i - 3)    'header names
+    Next i
+    
+    For i = 1 To 3
+        .DataBodyRange(2, i + 4).Value = Worksheets(2).Cells(SSIndex, cols(i + 2)).Value - Worksheets(2).Cells(SSIndex, cols(i + 3)).Value 'calculate dT's, put in bottom row
+    Next i
+
+    'Header Names
+    .HeaderRowRange(1).Value = " "                                  'no name in top left corner
+    .DataBodyRange(1, 1).Value = "Steady State Temperature [°C]:"   'set row headers
+    .DataBodyRange(2, 1).Value = "Delta Temperature [°C]:"
+    .HeaderRowRange(2) = "Heater 1"                                 'set first two column headers
+    .HeaderRowRange(3) = "Heater 2"
+    
+    .ListColumns(1).Range.Font.Bold = True                 'set all cells in first column bold
+    .HeaderRowRange(1).ColumnWidth = 29
+End With
+
+End Sub
+
+Private Sub CalculateTC()       'Calculate Thermal Conductivity
+
+With Sheets("Outputs")
+    With .ListObjects("Constants") 'Get Constants from Constants Table
+        Cond = .DataBodyRange(1, 1).Value
+        Thick = .DataBodyRange(1, 2).Value
+        Stand = .DataBodyRange(1, 3).Value
+        RValue = .DataBodyRange(1, 4).Value
+    End With
+
+    With .ListObjects("Outputs")   'Get Delta Temperature from Outputs Table
+        dT1 = .DataBodyRange(2, 5).Value
+        dT2 = .DataBodyRange(2, 6).Value
+        dT3 = .DataBodyRange(2, 7).Value
+    End With
+
+    'Calculate Thermal Conductivity
+    TC = ((Thick / CDbl(1000)) * Cond) / (((Stand / CDbl(1000)) * dT2 / (dT1 + dT3)) - (RValue * Cond))
+
+    .Range("C8").Value = "Thermal Conductivity:"        'print "Thermal Conductivity"
+    .Range("D8").Value = TC                             'print value
+    .Range("C8").HorizontalAlignment = xlRight          'shift to right "Thermal conductivity"
+    .Range("B8:D8").BorderAround Weight:=xlThick        'put box around TC
+    .Range("C8:D8").Font.Size = 18                      'increase font size for TC
+    .Range("B8:C8").Merge                               'merge cells that say "thermal conductivity"
+End With
+
+End Sub
+
+Private Sub AddButtons()
+
+With Sheets("Outputs")
+    Set A = .Range("I9:J11")        'set button dimensions
+    Set btn1 = .Buttons.Add(A.Left, A.Top, A.Width, A.Height)   'create button with those dimensions
+    With btn1
+        .OnAction = "CalculateTC"   'which macro sub the button runs when pressed
+        .Caption = "Recalculate"    'text that is displayed on the button
+    End With
+    
+    Set A = .Range("I13:J15")
+    Set btn2 = .Buttons.Add(A.Left, A.Top, A.Width, A.Height)
+    With btn2
+        .OnAction = "DeleteFirstDataPoint"
+        .Caption = "Delete Next Entry"
+    End With
+    
+    Set A = .Range("I17:J19")
+    Set btn3 = .Buttons.Add(A.Left, A.Top, A.Width, A.Height)
+    With btn3
+        .OnAction = "Refresh"
+        .Caption = "Refresh"
+    End With
+    
+    Set A = .Range("L9:M11")
+    Set btn4 = .Buttons.Add(A.Left, A.Top, A.Width, A.Height)
+    With btn4
+        .OnAction = "RemoveLessThans"
+        .Caption = "Remove Negative Values"
+    End With
+    
+    Set A = .Range("L13:M15")
+    Set btn5 = .Buttons.Add(A.Left, A.Top, A.Width, A.Height)
+    With btn5
+        .OnAction = "LoadData"
+        .Caption = "Reset Data"
+    End With
+    
+    Set A = .Range("L17:M19")
+    Set btn6 = .Buttons.Add(A.Left, A.Top, A.Width, A.Height)
+    With btn6
+        .OnAction = "Inquire"
+        .Caption = "Suggest Steady State"
+    End With
+End With
+End Sub
+
+Private Sub DeleteFirstDataPoint()
+
+Worksheets(2).Rows(2).Delete
+
+    Call SteadyStateValues         'Find Steady State
+    Call OutputsTable       'Setup Outputs Table
+    Call CalculateTC        'Calculate Thermal Conductivity
+    
+End Sub
+
+Private Sub Refresh()
+
+    Application.ScreenUpdating = False
+    Sheets("Outputs").Cells.ClearContents
+    Call InitializeOutputs
+    Call ConstantsTable     'Setup Constants Table
+    Call SteadyStateValues
+    Call OutputsTable       'Setup Outputs Table
+    Call CalculateTC        'Calculate Thermal Conductivity
+    Application.ScreenUpdating = True
+    
+End Sub
+
+Private Sub RemoveLessThans()       'removes all data points that are less than 0
+
+i = CDbl(2)
+With Sheets("Data")
+Do While Not IsEmpty(.Cells(i + 1, 1))      'while the next row is not empty
+    For j = 1 To 6                          'loop through all columns with temperatures
+        If (.Cells(i, cols(j)).Value <= 0) Then 'if a value is less than 0
+            .Rows(i).Delete                 'delete that row
+            i = i - 1                       'go back a row since all rows now shift up
+            Exit For                        'go to next row
+        End If
+    Next j                                  'next column
+    i = i + 1                               'next row
+Loop
+End With
+
+End Sub
+
+Private Sub Inquire()
+
+Iinitial = InputBox("Desired Heater 1 Temperature?")
+Call OutputsTable
+Call CalculateTC
+
+End Sub
+
+Private Sub SetVariables()
+cols(1) = 2     'columns of original data that have temperatures
+cols(2) = 5
+cols(3) = 8
+cols(4) = 9
+cols(5) = 10
+cols(6) = 11
+
+Iinitial = 4
+
+End Sub
