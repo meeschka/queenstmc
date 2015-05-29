@@ -419,7 +419,7 @@ class Arduino(InstrumentinoController):
     
 # base class and variables
 class SysVarDigitalArduino(SysVarDigital):
-    def __init__(self, name, pin, compName='', stateToValue={'on': 1, 'off':0}, helpLine='', editable=True, PreSetFunc=None):
+    def __init__(self, name, pin, compName='', stateToValue={'on': 0, 'off':1}, helpLine='', editable=True, PreSetFunc=None):
         self.stateToValue = stateToValue
         self.valueToState = {v: k for k, v in stateToValue.items()}
         SysVarDigital.__init__(self, name, self.stateToValue.keys(), Arduino, compName, helpLine, editable, PreSetFunc)
@@ -429,6 +429,7 @@ class SysVarDigitalArduino(SysVarDigital):
     def FirstTimeOnline(self):
         if self.pin != None:
             self.GetController().PinMode(self.pin, self.editable)
+            self.GetController().DigitalWrite(self.pin, 1)
         
     def GetFunc(self):
         if self.pin != None:
@@ -528,7 +529,7 @@ class SysVarAnalogArduinoThermistor(SysVarAnalog):
     def GetFunc(self):
         res = self.GetController().AnalogReadMultiRes(self.pinIn)
         
-        R1 = (np.log(res)) if res != None else 0
+        R1 = (np.log(res)) if res != None and res != 0 else 0
         R3 = (R1*R1*R1) if R1 != None else 0
 
         tmp = self.A+self.B*R1+self.C*R3 if R3 != None else 0
@@ -686,7 +687,7 @@ class SysVarPidRelayArduino(SysVarAnalog):
         self.A = self.varis[0]
         self.B = self.varis[1]
         self.C = self.varis[2]
-        print("First time online")
+        self.GetController().PidRelayEnable(self.pidVar, 0)
         
     def GetFunc(self):
         

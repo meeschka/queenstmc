@@ -28,8 +28,12 @@ pinAnalInThermometerHeat1 = int(0)
 pinAnalInThermometerHeat2 = int(1)
 
 
-pinDigiOutHeater1Relay = 13
-pinDigiOutHeater2Relay = 12
+pinDigiOutHeater1Relay = 8
+pinDigiOutHeater2Relay = 9
+
+heatVar1 = 10
+heatVar2 = 11
+
 
 pinVoltMax = 5.12
 pinVoltMin = 0 
@@ -53,8 +57,8 @@ sample3Thermometer = thermistorUnipolar('Sample Temperature 3', (valMin, valMax)
 sample4Thermometer = thermistorUnipolar('Sample Temperature 4', (valMin, valMax), pinAnalInThermometer4,  pinVoltMax, pinVoltMin)
 
 
-digiPins1 = DigitalPins('digital pins', (SysVarDigitalArduino('Heat Element 1', pinDigiOutHeater1Relay),))
-digiPins2 = DigitalPins('digital pins', (SysVarDigitalArduino('Heat Element 2', pinDigiOutHeater2Relay),))
+digiPins1 = DigitalPins('digital pins', (SysVarDigitalArduino('Heat Element 1', heatVar1),))
+digiPins2 = DigitalPins('digital pins', (SysVarDigitalArduino('Heat Element 2', heatVar2),))
 
 SteadyState = SteadyStateClass('State',['Varying','Steady'], Arduino)
  
