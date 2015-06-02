@@ -730,7 +730,7 @@ class SysVarPidRelayArduino(SysVarAnalog):
         #if value is T
         #Calculate desired R from T - find approx R from curve fit
         #based on difference between T desired and T calculated, change R until within a given threshold
-       
+        '''
         R3 = 0
         R = 10000
         if np.isnan(R):
@@ -743,9 +743,9 @@ class SysVarPidRelayArduino(SysVarAnalog):
         while abs(tmp-value)>0.5:
 
             if abs(tmp-value) > 4:
-                deltaR = 400
+                deltaR = 1000
             else:
-                deltaR = 100
+                deltaR = 300
 
             if tmp < value:
                 R = R+deltaR
@@ -770,14 +770,15 @@ class SysVarPidRelayArduino(SysVarAnalog):
 
         print analInCompatibleValue
 
-
-        self.GetController().PidRelaySet(self.pidVar, analInCompatibleValue)
+        '''
+        self.GetController().PidRelaySet(self.pidVar, value)
         
         #based on difference between setTemp and temp, find amount of time t to activate heater
         
     def Enable(self, enable):
         
         self.GetController().PidRelayEnable(self.pidVar, enable)
+        print("Enable")
         
     def Tune(self, kp, ki, kd):
         self.GetController().PidRelayTune(self.pidVar, kp, ki, kd)

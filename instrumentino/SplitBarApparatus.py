@@ -28,11 +28,11 @@ pinAnalInThermometerHeat1 = int(0)
 pinAnalInThermometerHeat2 = int(1)
 
 
-pinDigiOutHeater1Relay = 8
-pinDigiOutHeater2Relay = 9
+pinDigiOutHeater1Relay = 11
+pinDigiOutHeater2Relay = 10
 
-heatVar1 = 10
-heatVar2 = 11
+heatVar1 = 7
+heatVar2 = 6
 
 
 pinVoltMax = 5.12
