@@ -505,6 +505,7 @@ void setup() {
  * The loop function is called in an endless loop
  */
 void loop() {
+        float test=0;
 	char c, argC;
 	char *argV[ARGV_MAX];
 	int i, pin;
@@ -529,7 +530,9 @@ void loop() {
 	for (i = 0; i < PID_RELAY_MAX_VARS; i++) {
 		if (pidRelayDescs[i].isOn) {
 			pidRelayDescs[i].inputVar = tempCalc(analogRead(pidRelayDescs[i].pinAnalIn), i);
-			pidRelayDescs[i].handler->Compute();
+                        test = pidRelayDescs[i].inputVar;
+			//test = analogRead(pidRelayDescs[i].pinAnalIn);
+                        pidRelayDescs[i].handler->Compute();
 
 			// turn relay on/off according to the PID output
 			curMs = millis();
@@ -538,12 +541,12 @@ void loop() {
 				pidRelayDescs[i].windowStartTime += pidRelayDescs[i].windowSize;
 			}
 			if (pidRelayDescs[i].outputVar > curMs - pidRelayDescs[i].windowStartTime) {
-				digitalWrite(pidRelayDescs[i].pinDigiOut, HIGH);
-                                //Serial.println("ON");
+				digitalWrite(pidRelayDescs[i].pinDigiOut, LOW);
+                                //Serial.println(tempCalc(analogRead(pidRelayDescs[i].pinAnalIn), i));
                                 
 			}
 			else {
-				digitalWrite(pidRelayDescs[i].pinDigiOut, LOW);
+				digitalWrite(pidRelayDescs[i].pinDigiOut, HIGH);
                                 //Serial.println("OFF");
                                 
 			}
@@ -610,8 +613,7 @@ void loop() {
 			}
 
 			// Acknowledge the command
-                        Serial.println(analogRead(0));
-                        Serial.println(tempCalc(analogRead(0), 1));
+                        Serial.println(test, 4);
 			Serial.println(doneString);
 			break;
 		default:
@@ -625,16 +627,18 @@ void loop() {
 }
 
 
-double tempCalc(int anVal, int n){
-  double result;
-  double A[] = {0.004045442, 0.003903939};
-  double B[] = {-1.4426e-06, 2.21645e-05};
-  double C[] = {-8.47204E-07, -9.45665e-07};
-  double Rfix[] = {9900, 9850};
-  result = Rfix[n-1] / ((1023/anVal)-1);
+float tempCalc(int anVal, int n){
+  float result = 0;
+  anVal = float(anVal);
+  float Rfix[] = {9900.0, 9850.0};
+  float A[] = {0.004045442, 0.003903939};
+  float B[] = {-1.4426e-06, 2.21645e-05};
+  float C[] = {-8.47204E-07, -9.45665e-07};
+
+  result = Rfix[n] / ((1023.0/anVal)-1.0);
   result = log(result);
-  result = 1/ ( A[n-1] +B[n-1]*result +C[n-1]*result*result*result);
-  result = double(result-273.15);
+  //result = 1/(0.004045442 + (1.4426e-6)*result + (-8.47204e-7)*result*result*result);
+  result = (1 / ( A[n] + B[n]*result + C[n]*result*result*result))-273.15;
   return result;
   
 }
