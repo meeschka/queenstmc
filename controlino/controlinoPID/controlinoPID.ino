@@ -538,12 +538,12 @@ void loop() {
 				pidRelayDescs[i].windowStartTime += pidRelayDescs[i].windowSize;
 			}
 			if (pidRelayDescs[i].outputVar > curMs - pidRelayDescs[i].windowStartTime) {
-				digitalWrite(pidRelayDescs[i].pinDigiOut, HIGH);
-                                digitalWrite(9, LOW);
+				digitalWrite(pidRelayDescs[i].pinDigiOut, LOW);
+                                
 			}
 			else {
-				digitalWrite(pidRelayDescs[i].pinDigiOut, LOW);
-                                digitalWrite(8, HIGH);
+				digitalWrite(pidRelayDescs[i].pinDigiOut, HIGH);
+                                
 			}
 		}
 	}
