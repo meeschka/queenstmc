@@ -341,7 +341,7 @@ class Arduino(InstrumentinoController):
         '''
         self._sendData('I2cWrite %d %s'%(address, ' '.join(str(n) for n in values)), wait=True)
     
-    def _sendData(self, txData, addLineBreak=True, lock=True, wait=False, log=False):
+    def _sendData(self, txData, addLineBreak=True, lock=True, wait=False, log=True):
         '''
         This function should be called only in this class
         Send a command (txData) to the Arduino and wait for acknowledgment.
