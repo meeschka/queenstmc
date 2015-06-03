@@ -335,6 +335,7 @@ class Arduino(InstrumentinoController):
         '''
         self._sendData('BlinkPin %d %d'%(pin, ms), wait=True)
         
+        
     def I2cWrite(self, address, values):
         '''
         Send a list of values over the I2C bus
@@ -778,7 +779,7 @@ class SysVarPidRelayArduino(SysVarAnalog):
     def Enable(self, enable):
         
         self.GetController().PidRelayEnable(self.pidVar, enable)
-        print("Enable")
+        
         
     def Tune(self, kp, ki, kd):
         self.GetController().PidRelayTune(self.pidVar, kp, ki, kd)

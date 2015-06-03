@@ -296,7 +296,7 @@ void cmdPidRelayCreate(char **argV) {
 	pidDesc->handler = new PID(&pidDesc->inputVar, &pidDesc->outputVar, &pidDesc->setPoint, kp, ki, kd, DIRECT);
 	pidDesc->handler->SetOutputLimits(0, pidDesc->windowSize);
 	pidDesc->isOn = false;
-        Serial.println("made t here");
+
 }
 
 /***
@@ -339,7 +339,7 @@ void cmdPidRelayEnable(char **argV) {
 	} else {
 		pidDesc->isOn = false;
 		pidDesc->handler->SetMode(MANUAL);
-		digitalWrite(pidDesc->pinDigiOut, LOW);
+		digitalWrite(pidDesc->pinDigiOut, HIGH);
 	}
 }
 
@@ -538,11 +538,13 @@ void loop() {
 				pidRelayDescs[i].windowStartTime += pidRelayDescs[i].windowSize;
 			}
 			if (pidRelayDescs[i].outputVar > curMs - pidRelayDescs[i].windowStartTime) {
-				digitalWrite(pidRelayDescs[i].pinDigiOut, LOW);
+				digitalWrite(pidRelayDescs[i].pinDigiOut, HIGH);
+                                //Serial.println("ON");
                                 
 			}
 			else {
-				digitalWrite(pidRelayDescs[i].pinDigiOut, HIGH);
+				digitalWrite(pidRelayDescs[i].pinDigiOut, LOW);
+                                //Serial.println("OFF");
                                 
 			}
 		}
@@ -608,6 +610,8 @@ void loop() {
 			}
 
 			// Acknowledge the command
+                        Serial.println(analogRead(0));
+                        Serial.println(tempCalc(analogRead(0), 1));
 			Serial.println(doneString);
 			break;
 		default:
@@ -626,10 +630,11 @@ double tempCalc(int anVal, int n){
   double A[] = {0.004045442, 0.003903939};
   double B[] = {-1.4426e-06, 2.21645e-05};
   double C[] = {-8.47204E-07, -9.45665e-07};
-  int Rfix[] = {9900, 9850};
-  result = (anVal/(anVal+Rfix[n-1]))*1023;
+  double Rfix[] = {9900, 9850};
+  result = Rfix[n-1] / ((1023/anVal)-1);
   result = log(result);
   result = 1/ ( A[n-1] +B[n-1]*result +C[n-1]*result*result*result);
-  result = result-273.15;
+  result = double(result-273.15);
   return result;
+  
 }
