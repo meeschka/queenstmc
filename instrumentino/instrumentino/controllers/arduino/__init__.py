@@ -194,7 +194,7 @@ class Arduino(InstrumentinoController):
         Takes the average of 6 values, and converts the analog reading into resistance
         '''   
         R = [9900, 9850, 9920, 9850, 9980, 9940]        
-        
+        '''
         i = 0
         value = [0, 0, 0, 0, 0, 0]
         while i<6:
@@ -203,8 +203,13 @@ class Arduino(InstrumentinoController):
             time.sleep(0.05)
             val= [value[1], value[2], value[3], value[4], value[5]]
         result = float(np.average(val))
-        result = R[pin]/((1023/result)-1) if result != 0 else 0
+        '''
+        result = self.AnalogRead(pin)
+        if result is None:
+            result = 0;
+        result = float(result)
 
+        result = float(R[pin]/((1023/result)-1)) if result != 0 else 0
         return result if result!= None else 0            
 
     def DigitalWriteHigh(self, pin):
@@ -691,22 +696,20 @@ class SysVarPidRelayArduino(SysVarAnalog):
         self.GetController().PidRelayEnable(self.pidVar, 0)
         
     def GetFunc(self):
-        
+        '''
         fraction = self.GetController().AnalogReadFraction(self.pinAnalIn, self.pinInVoltsMax, self.pinInVoltsMin)
         return (self.range[0] + (self.range[1] - self.range[0]) * fraction) if fraction != None else None
-        
+        '''
         #calculate temperature
         res = self.GetController().AnalogReadMultiRes(self.pinAnalIn)
-        
-        res = (res /(res+ self.Rfix)) * 1023 
-        
-        R1 = (np.log(res)) if res != None else 0
+        if res > 0:
+            R1 = (np.log(res)) if res != None else 0
+        else:
+            R1 = 0
         R3 = (R1*R1*R1) if R1 != None else 0
 
         tmp = self.A+self.B*R1+self.C*R3 if R3 != None else 0
         tmp = (1/tmp)-273.15 if tmp != None and tmp != 0 else 0
-        print("Temperature: ")        
-        print(tmp)
         
         if np.isnan(tmp):
             return 0

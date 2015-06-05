@@ -1,1 +1,0 @@
---- Run method ---14:27:26 Thermostat 1: T=30.0--- Run method ---14:27:48 Thermostat 1: T=25.0--- Run method ---14:29:01 Thermostat 1: T=10.0--- Run method ---14:30:00 Thermostat 2: T=10.0

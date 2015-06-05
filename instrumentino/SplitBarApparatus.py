@@ -28,8 +28,8 @@ pinAnalInThermometerHeat1 = int(0)
 pinAnalInThermometerHeat2 = int(1)
 
 
-pinDigiOutHeater1Relay = 8
-pinDigiOutHeater2Relay = 9
+pinDigiOutHeater1Relay = 9
+pinDigiOutHeater2Relay = 8
 
 
 
