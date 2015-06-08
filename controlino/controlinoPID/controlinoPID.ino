@@ -298,7 +298,24 @@ void cmdPidRelayCreate(char **argV) {
 	pidDesc->isOn = false;
 
 }
+/***
+ * PidRelayTune [Kp] [Ki] [Kd]
+ *
+ * Set the PID tuning parameters
+ */
+void cmdPidRelayTune(char **argV) {
+	int pidVar = strtol(argV[1], NULL, 10);
+	double kp = atof(argV[2]);
+	double ki = atof(argV[3]);
+	double kd = atof(argV[4]);
 
+	if (pidVar < 1 || pidVar > PID_RELAY_MAX_VARS) {
+		return;
+	}
+
+	PidRelayDesc* pidDesc = &pidRelayDescs[pidVar-1];
+	pidDesc->handler->SetTunings(kp, ki, kd);
+}
 /***
  * PidRelaySet [pidVar] [setpoint]
  *
@@ -598,7 +615,9 @@ void loop() {
                                 Serial.println("createPID");
 			} else if (strcasecmp(argV[0], "PidRelaySet") == 0) {
 				cmdPidRelaySet(argV);
-			} else if (strcasecmp(argV[0], "PidRelayEnable") == 0) {
+			} else if (strcasecmp(argV[0], "PidRelayTune") == 0) {
+				cmdPidRelayTune(argV);
+                        } else if (strcasecmp(argV[0], "PidRelayEnable") == 0) {
 				cmdPidRelayEnable(argV);
 			} else if (strcasecmp(argV[0], "HardSerConnect") == 0) {
 				cmdHardSerConnect(argV);
