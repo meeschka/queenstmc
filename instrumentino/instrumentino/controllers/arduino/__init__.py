@@ -452,12 +452,14 @@ class Arduino(InstrumentinoController):
         '''
         This function calls the Steinhart-Hart variables for each thermistor. These variables are determined experimentally for each thermistor
         '''
+        #assumes that pin numbers correspond to these variables
+        #ie, pin at A0 is the first thermistor, second is at A1, etc...
+        #if you want to use differnt analog pins, modify thermistorVars to take a thermName or something
 
         A = (0.004045442,0.003903939,0.004027618,0.004044341,0.004059005,0.00397408)
         B = (-1.4426E-06,2.21645E-05,5.79403E-07,-2.24057E-06,-4.08686E-06,9.56374E-06)
         C = (-8.47204E-07,-9.45665E-07,-8.52131E-07,-8.40103E-07,-8.29844E-07,-8.80338E-07)
-        otherPin = (1, 3, 5, 7, 9, 11)
-        varis = (A[pin], B[pin], C[pin], otherPin[pin])
+        varis = (A[pin], B[pin], C[pin])
         return varis if varis!= None else 0   
         
     def tempCalcs(self, pin):
@@ -616,7 +618,7 @@ class SysVarPidRelayArduino(SysVarAnalog):
     
     It shows an analog variable to set and read the PID controlled quantity (e.g. the temperature) 
     '''
-    def __init__(self, name, range, pidVar, windowSizeMs, kp, ki, kd, pinAnalIn, pinDigiOut, compName='', helpLine='', units='', PreSetFunc=None, pinInVoltsMax=5, pinInVoltsMin=0, PostGetFunc=None):
+    def __init__(self, name, range, pidVar, windowSizeMs, kp, ki, kd, pinAnalIn, pinDigiOut, compName='', helpLine='', units='', PreSetFunc=None, pinInVoltsMax=5, pinInVoltsMin=0, PostGetFunc=None, therm=False):
         SysVarAnalog.__init__(self, name, range, Arduino, compName, helpLine, True, units, PreSetFunc, PostGetFunc)
         self.pinAnalIn = pinAnalIn
         self.pinDigiOut = pinDigiOut
@@ -628,6 +630,7 @@ class SysVarPidRelayArduino(SysVarAnalog):
         self.kp = kp
         self.ki = ki
         self.kd = kd
+        self.therm = therm
 
         
         
@@ -636,14 +639,13 @@ class SysVarPidRelayArduino(SysVarAnalog):
         self.GetController().PidRelayEnable(self.pidVar, 0)
         
     def GetFunc(self):
-        '''
-        fraction = self.GetController().AnalogReadFraction(self.pinAnalIn, self.pinInVoltsMax, self.pinInVoltsMin)
-        return (self.range[0] + (self.range[1] - self.range[0]) * fraction) if fraction != None else None
-        '''
-        #calculate temperature
-        tmp = self.GetController().tempCalcs(self.pinAnalIn)
-         
-        return tmp if tmp != None else 0  
+        if self.therm is False:
+            fraction = self.GetController().AnalogReadFraction(self.pinAnalIn, self.pinInVoltsMax, self.pinInVoltsMin)
+            return (self.range[0] + (self.range[1] - self.range[0]) * fraction) if fraction != None else None
+        else:
+            #calculate temperature
+            tmp = self.GetController().tempCalcs(self.pinAnalIn)
+            return tmp if tmp != None else 0  
 
 
             

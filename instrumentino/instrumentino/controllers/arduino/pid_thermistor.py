@@ -9,7 +9,7 @@ class PidControlledThermistor(SysCompArduino):
     def __init__(self, name, rangeT, pinInT, pinOutRelay, sensorVoltsMin, sensorVoltsMax, pidVar, windowSizeMs, kp, ki, kd):
         self.varEnable = SysVarDigitalArduino('enable', None, name, PreSetFunc=self.PreEditEnable)
         self.pidRelayVar = SysVarPidRelayArduino('T', rangeT, pidVar, windowSizeMs, kp, ki, kd, pinInT, pinOutRelay, name, 'Temperature',
-                                                 'C', pinInVoltsMin=sensorVoltsMin, pinInVoltsMax=sensorVoltsMax)
+                                                 'C', pinInVoltsMin=sensorVoltsMin, pinInVoltsMax=sensorVoltsMax, therm=True)
         SysCompArduino.__init__(self, name,
                                 (self.pidRelayVar, self.varEnable), 
                                 'control a heating element through a relay to keep the temperature set')
