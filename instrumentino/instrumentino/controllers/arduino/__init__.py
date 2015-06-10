@@ -211,7 +211,44 @@ class Arduino(InstrumentinoController):
 
         result = float(R[pin]/((1023/result)-1)) if result != 0 else 0
         return result if result!= None else 0            
+    def AnalogReadMultiPins(self, pin1,pin2):
+        '''
+        Takes the average of 6 values, and converts the analog reading into resistance
+        '''   
+        R = [9900, 9850, 9920, 9850, 9980, 9940]        
+    
+        i = 0
+        value1 = [0, 0, 0, 0]
+        value2 = [0, 0, 0, 0]
+        while i<4:
+            value1[i] = self.AnalogRead(pin1)
+            if value1[i] is None:
+                value1[i] = 0
+            value2[i] = self.AnalogRead(pin2)
+            if value2[i] is None:
+                value2[i] = 0
+            i +=1
+            #val= [value[1], value[2], value[3], value[4], value[5]]
+        #result = float(np.average(val))
+        result1 = np.average(value1)
+        result1 = float(R[pin1]/((1023/result1)-1)) if result1 != 0 else 0
+        result2 = np.average(value2)
+        result2 = float(R[pin2]/((1023/result2)-1)) if result2 != 0 else 0
+        
+        if (abs(result1 - result2)) > 0.5:
+            print("Temp difference: ")
+            print(result1-result2)
+            
+        result = float(( result1+result2 )/ 2)
+        '''
+        result = self.AnalogRead(pin1)
+        if result is None:
+            result = 0;
+        result = float(result)
 
+        result = float(R[pin1]/((1023/result)-1)) if result != 0 else 0
+        '''
+        return result if result!= None else 0 
     def DigitalWriteHigh(self, pin):
         '''
         Set the voltage level of a digital output pin to the maximum (HIGH level)
@@ -419,8 +456,8 @@ class Arduino(InstrumentinoController):
         A = (0.004045442,0.003903939,0.004027618,0.004044341,0.004059005,0.00397408)
         B = (-1.4426E-06,2.21645E-05,5.79403E-07,-2.24057E-06,-4.08686E-06,9.56374E-06)
         C = (-8.47204E-07,-9.45665E-07,-8.52131E-07,-8.40103E-07,-8.29844E-07,-8.80338E-07)
-        
-        varis = (A[pin], B[pin], C[pin])
+        otherPin = (1, 3, 5, 7, 9, 11)
+        varis = (A[pin], B[pin], C[pin], otherPin[pin])
         return varis if varis!= None else 0     
     
 # base class and variables
@@ -527,7 +564,8 @@ class SysVarAnalogArduinoThermistor(SysVarAnalog):
         self.varis = self.GetController().thermistorVars(self.pinIn)
         self.A = self.varis[0]
         self.B = self.varis[1]
-        self.C = self.varis[2]    
+        self.C = self.varis[2]
+        self.otherPin = self.varis[3]
         
     def GetUnipolarRange(self):
         return self.GetUnipolarMax() - self.GetUnipolarMin()
