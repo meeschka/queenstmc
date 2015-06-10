@@ -37,6 +37,7 @@ PID_ATune aTune(&input, &output);
 
 void setup()
 {  
+  bool keepRunning = 1;
   windowStartTime = millis();
   pinMode(relayPin, OUTPUT);
   //relay is active low, so urn off to start
@@ -60,7 +61,6 @@ void setup()
 
 void loop()
 {
-
   unsigned long now = millis();
 
   input = tempCalc(analogRead(0), 1);

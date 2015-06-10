@@ -1,5 +1,5 @@
 from __future__ import division
-from instrumentino.controllers.arduino import SysCompArduino, SysVarAnalogArduinoUnipolarThermistor
+from instrumentino.controllers.arduino import SysCompArduino, SysVarAnalogArduinoUnipolar
 __author__ = 'pitts'
 '''
 class AnalogPinCallibration(SysCompArduino):
@@ -11,6 +11,6 @@ class AnalogPinCallibration(SysCompArduino):
 
 class thermistorUnipolar(SysCompArduino):
     def __init__(self, name, rangeT, pinInT, pinInVoltsMax, pinInVoltsMin):
-        SysCompArduino.__init__(self, name, (SysVarAnalogArduinoUnipolarThermistor('T', rangeT, pinInT, None, name, 'Temperature', 'C', pinInVoltsMax=pinInVoltsMax, pinInVoltsMin=pinInVoltsMin),),
+        SysCompArduino.__init__(self, name, (SysVarAnalogArduinoUnipolar('T', rangeT, pinInT, None, name, 'Temperature', 'C', pinInVoltsMax=pinInVoltsMax, pinInVoltsMin=pinInVoltsMin, therm=True),),
                                 'measure the temperature')
                                                   
