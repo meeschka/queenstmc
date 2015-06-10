@@ -195,14 +195,18 @@ class Arduino(InstrumentinoController):
         '''   
         R = [9900, 9850, 9920, 9850, 9980, 9940]        
         '''
+        #No obvious effect with multisampling at this interval
         i = 0
         value = [0, 0, 0, 0, 0, 0]
         while i<6:
-            value[i] = self.AnalogRead(pin)
+            value[i] = self.AnalogRead(pin) if value[i] is not None else 0
+            print value[i]
             i +=1
-            time.sleep(0.05)
+            time.sleep(0.005)
             val= [value[1], value[2], value[3], value[4], value[5]]
-        result = float(np.average(val))
+        #result = float(np.average(val))
+        result = value[0]
+        
         '''
         result = self.AnalogRead(pin)
         if result is None:
@@ -210,45 +214,10 @@ class Arduino(InstrumentinoController):
         result = float(result)
 
         result = float(R[pin]/((1023/result)-1)) if result != 0 else 0
+        #print(pin)        
+        #print(time.time())
         return result if result!= None else 0            
-    def AnalogReadMultiPins(self, pin1,pin2):
-        '''
-        Takes the average of 6 values, and converts the analog reading into resistance
-        '''   
-        R = [9900, 9850, 9920, 9850, 9980, 9940]        
-    
-        i = 0
-        value1 = [0, 0, 0, 0]
-        value2 = [0, 0, 0, 0]
-        while i<4:
-            value1[i] = self.AnalogRead(pin1)
-            if value1[i] is None:
-                value1[i] = 0
-            value2[i] = self.AnalogRead(pin2)
-            if value2[i] is None:
-                value2[i] = 0
-            i +=1
-            #val= [value[1], value[2], value[3], value[4], value[5]]
-        #result = float(np.average(val))
-        result1 = np.average(value1)
-        result1 = float(R[pin1]/((1023/result1)-1)) if result1 != 0 else 0
-        result2 = np.average(value2)
-        result2 = float(R[pin2]/((1023/result2)-1)) if result2 != 0 else 0
-        
-        if (abs(result1 - result2)) > 0.5:
-            print("Temp difference: ")
-            print(result1-result2)
-            
-        result = float(( result1+result2 )/ 2)
-        '''
-        result = self.AnalogRead(pin1)
-        if result is None:
-            result = 0;
-        result = float(result)
-
-        result = float(R[pin1]/((1023/result)-1)) if result != 0 else 0
-        '''
-        return result if result!= None else 0 
+ 
     def DigitalWriteHigh(self, pin):
         '''
         Set the voltage level of a digital output pin to the maximum (HIGH level)
@@ -484,7 +453,25 @@ class Arduino(InstrumentinoController):
             return float(tmp) if tmp !=None else 0
          
         return tmp if tmp != None else 0         
+ 
+    def redundantTempCalcs(self, pin):
+        #Reads two thermistors to get average temp reading
+        #Assumes second thermistor pin is next to first
+        pin1 = pin
+        pin2 = pin1 + 1
     
+        temp1 = self.tempCalcs(pin1)
+        temp2 = self.tempCalcs(pin2)
+        average = (temp1+temp2)/2
+    
+        diff = abs( temp2 - temp1 )
+        if diff > 1:
+            print("Temp error: ")
+            print(pin1, pin2)
+            print(diff)
+        return average
+    
+   
 # base class and variables
 class SysVarDigitalArduino(SysVarDigital):
     def __init__(self, name, pin, compName='', stateToValue={'on': 0, 'off':1}, helpLine='', editable=True, PreSetFunc=None):
@@ -645,6 +632,8 @@ class SysVarPidRelayArduino(SysVarAnalog):
         else:
             #calculate temperature
             tmp = self.GetController().tempCalcs(self.pinAnalIn)
+            #tmp = self.GetController().redundantTempCalcs(self.pinAnalIn)
+            
             return tmp if tmp != None else 0  
 
 
