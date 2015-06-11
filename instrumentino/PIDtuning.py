@@ -9,7 +9,7 @@ from instrumentino.controllers.arduino import Arduino
 from instrumentino.controllers.arduino import SysVarDigitalArduino
 from instrumentino.controllers.arduino.pins import DigitalPins, AnalogPins
 from instrumentino.controllers.arduino.pid_thermistor import PidControlledThermistor
-from instrumentino.controllers.arduino.thermistor import thermistorUnipolar
+from instrumentino.controllers.arduino.thermistor import thermistor
 from instrumentino.SteadyStateModule import SteadyStateClass
 
 
@@ -18,7 +18,7 @@ from instrumentino.SteadyStateModule import SteadyStateClass
 '''
 # Arduino pin assignments
 
-
+pinAnalInThermometer1 = int(3)
 pinAnalInThermometerHeat1 = int(0)
 pinDigiOutHeater1Relay = 9
 
@@ -35,6 +35,7 @@ valMin = 00
 '''
 
 #heatThermistor1 = AnalogPinCallibration('Heater Temperature', [15, 1000], pinAnalInThermometerInHeat, pinVoltMax, pinVoltMin)
+sample1Thermometer = thermistor('Sample Temperature 1', (valMin, valMax), pinAnalInThermometer1, pinVoltMax, pinVoltMin)
 
 
 heatThermistor1 = PidControlledThermistor('Heater 1', [valMin, valMax], pinAnalInThermometerHeat1, pinDigiOutHeater1Relay, 0.25, 5.05, 1, 5000, 45.0, 4.2, 120)
@@ -92,7 +93,7 @@ class ActionCloseSystem(SysAction):
 '''
 class System(Instrument):
     def __init__(self):
-        comps = (heatThermistor1)       
+        comps = (heatThermistor1, sample1Thermometer)       
         actions = (SetThermostat1(), TuneThermostat1(), ActionCloseSystem())
         name = 'Lab Toaster'
         description = 'A portable split-bar apparatus'

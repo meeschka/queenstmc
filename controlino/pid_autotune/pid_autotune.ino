@@ -8,7 +8,7 @@
 byte ATuneModeRemember=2;
 double input=80;
 double output=25;
-double setpoint=35;
+double setpoint=45;
 double kp=2,ki=0.5,kd=2;
 
 //input will be temp in C, output will be relay time in ms

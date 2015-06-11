@@ -337,7 +337,7 @@ class Arduino(InstrumentinoController):
         self._sendData('Reset', wait=True)
         time.sleep(1)
         
-    def BlinkPin(self, pin=PIN_LED, ms=500):
+    def BlinkPin(self, pin, ms=500):
         '''
         Start blinking a pin on the Arduino.
         This may be used to blink the LED on the board (pin 13), which might serve as an indication that the Arduino is still running.
@@ -470,11 +470,11 @@ class Arduino(InstrumentinoController):
             print(pin1, pin2)
             print(diff)
         return average
-    
+        
    
 # base class and variables
 class SysVarDigitalArduino(SysVarDigital):
-    def __init__(self, name, pin, compName='', stateToValue={'on': 0, 'off':1}, helpLine='', editable=True, PreSetFunc=None):
+    def __init__(self, name, pin, compName='', stateToValue={'on': 0, 'off':1}, helpLine='', editable=True, PreSetFunc=None, blinkMs=None):
         self.stateToValue = stateToValue
         self.valueToState = {v: k for k, v in stateToValue.items()}
         SysVarDigital.__init__(self, name, self.stateToValue.keys(), Arduino, compName, helpLine, editable, PreSetFunc)
@@ -497,6 +497,11 @@ class SysVarDigitalArduino(SysVarDigital):
         self.lastSetState = state
         if self.pin != None:
             self.GetController().DigitalWrite(self.pin, self.stateToValue[state])
+            
+    def BlinkFunc(self, blinkMs):
+        if self.pin != None:
+            self.GetController().BlinkPin(self.pin, ms=blinkMs)
+            
 
 class ArduinoI2cDac():
     def __init__(self, dacBits, address):

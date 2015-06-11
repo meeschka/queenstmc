@@ -1,0 +1,1 @@
+--- Run method ---15:37:58 Heat pulse: Time=00:00:10.000, heater=1

@@ -58,6 +58,7 @@ sample4Thermometer = thermistor('Sample Temperature 4', (valMin, valMax), pinAna
 digiPins1 = DigitalPins('digital pins', (SysVarDigitalArduino('Heat Element 1', pinDigiOutHeater1Relay),))
 digiPins2 = DigitalPins('digital pins', (SysVarDigitalArduino('Heat Element 2', pinDigiOutHeater2Relay),))
 
+
 SteadyState = SteadyStateClass('State',['Varying','Steady'], Arduino)
  
 '''
@@ -123,6 +124,40 @@ class TuneThermostat2(SysAction):
                     heatThermistor2.vars['T'].Set(30)
                     heatThermistor2.vars['enable'].Set('on')
                     cfg.Sleep(5*60)
+                    
+
+
+class heatPulse(SysAction):
+    def __init__(self):
+        self.Seconds = SysActionParamTime()
+        #self.heater = SysActionParamInt()
+        self.trigger = SysActionParamInt('heater', [0,1])
+        
+        #self.pin = SysActionParamFloat(digiPins1.vars['Heat Element 1'])
+        SysAction.__init__(self, 'Heat pulse', (self.Seconds, self.trigger))
+        
+    def Command(self):
+        if self.trigger.Get():
+            
+            #set pin
+            digiPins1.vars['Heat Element 1'].Set('on')
+            #wait pulse time
+            cfg.Sleep(self.Seconds.Get())
+            #Turn back off
+            digiPins1.vars['Heat Element 1'].Set('off')
+
+class blinkHeat(SysAction):
+    def __init__(self):
+        self.milliseconds = SysActionParamInt('blink time ms', [0, 2000])
+        #self.pulseTime = SysActionParamInt('pulse time, ms', [0, 5000])
+        #self.milliseconds = SysActionParamFloat(name='blink time ms', range=[0, 2000])
+        self.trigger = SysActionParamInt('heat blink on?', [0, 1])
+        SysAction.__init__(self, 'Blink Heat', (self.milliseconds, self.trigger))
+    def Command(self):
+        if self.trigger.Get():
+            digiPins1.vars['Heat Element 1'].BlinkFunc(self.milliseconds.Get())
+
+
         
 def closeAll():
     heatThermistor1.vars['enable'].Set('off')
@@ -143,7 +178,7 @@ class System(Instrument):
         comps = (heatThermistor1, heatThermistor2, sample1Thermometer, sample2Thermometer, sample3Thermometer, sample4Thermometer, digiPins1, digiPins2, SteadyState)
         #, sample1Thermometer, sample2Thermometer, sample3Thermometer, sample4Thermometer, digiPins1, digiPins2)
         #comps = (sample1Thermometer, sample2Thermometer, sample3Thermometer, sample4Thermometer,       
-        actions = (SetThermostat1(), TuneThermostat1(), SetThermostat2(), TuneThermostat2(), ActionCloseSystem())
+        actions = (SetThermostat1(), TuneThermostat1(), SetThermostat2(), TuneThermostat2(), heatPulse(), blinkHeat(), ActionCloseSystem())
         name = 'Lab Toaster'
         description = 'A portable split-bar apparatus'
         version = '1.0'
