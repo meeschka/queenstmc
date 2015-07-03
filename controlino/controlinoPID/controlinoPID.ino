@@ -115,6 +115,7 @@ int blinkingPin;
 unsigned long blinkLastChangeMs;
 unsigned long blinkingDelayMs;
 
+
 // ------------------------------------------------------------
 // Utility functions
 // ------------------------------------------------------------
@@ -489,6 +490,7 @@ void cmdSerReceive(char **argV) {
  * The setup function is called once at startup of the sketch
  */
 void setup() {
+        analogReference(EXTERNAL);
 	Serial.begin(SERIAL0_BAUD);
 	pMsg = msg;
 
@@ -529,18 +531,19 @@ void loop() {
 	unsigned long curMs;
         
 
-	// Take care of blinking LED
+	// Take care of blinking heater - set time that heater is on for every 5000ms window
 	if (startBlinking == true) {
 		curMs = millis();
-		if (curMs > blinkLastChangeMs + blinkingDelayMs) {
+		if (curMs - blinkLastChangeMs > 5000)
+                        {
 			blinkLastChangeMs = curMs;
-			if (digitalRead(blinkingPin) == HIGH) {
+                        }
+		if (blinkingDelayMs > curMs - blinkLastChangeMs) {
 				digitalWrite(blinkingPin, LOW);
 			} else {
 				digitalWrite(blinkingPin, HIGH);
 			}
-		}
-	}
+        }
 
 
 
@@ -548,8 +551,9 @@ void loop() {
 	for (i = 0; i < PID_RELAY_MAX_VARS; i++) {
 		if (pidRelayDescs[i].isOn) {
 			pidRelayDescs[i].inputVar = tempCalc(analogRead(pidRelayDescs[i].pinAnalIn), i);
-                        test = pidRelayDescs[i].inputVar;
+                        //test = pidRelayDescs[i].inputVar;
 			//test = analogRead(pidRelayDescs[i].pinAnalIn);
+                        test=pidRelayDescs[i].outputVar;
                         pidRelayDescs[i].handler->Compute();
 
 			// turn relay on/off according to the PID output

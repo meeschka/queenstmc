@@ -18,11 +18,11 @@ from instrumentino.SteadyStateModule import SteadyStateClass
 '''
 # Arduino pin assignments
 
-pinAnalInThermometer1 = int(2)
-pinAnalInThermometer2 = int(3)
+pinAnalInThermometer1 = int(3)
+pinAnalInThermometer2 = int(6)
 
-pinAnalInThermometer3 = int(4)
-pinAnalInThermometer4 = int(5)
+pinAnalInThermometer3 = int(7)
+pinAnalInThermometer4 = int(8)
 
 pinAnalInThermometerHeat1 = int(0)
 pinAnalInThermometerHeat2 = int(1)
@@ -31,13 +31,11 @@ pinAnalInThermometerHeat2 = int(1)
 pinDigiOutHeater1Relay = 9
 pinDigiOutHeater2Relay = 8
 
-
-
 pinVoltMax = 5.12
 pinVoltMin = 0 
 
-valMax = 50
-valMin = 00
+valMax = 100
+valMin = 10
 '''
 *** System components
 '''
@@ -45,8 +43,10 @@ valMin = 00
 #heatThermistor1 = AnalogPinCallibration('Heater Temperature', [15, 1000], pinAnalInThermometerInHeat, pinVoltMax, pinVoltMin)
 
 
-heatThermistor1 = PidControlledThermistor('Heater 1', [valMin, valMax], pinAnalInThermometerHeat1, pinDigiOutHeater1Relay, 0.25, 5.05, 1, 5000, 45.0, 4.2, 120)
+heatThermistor1 = PidControlledThermistor('Heater 1', [valMin, valMax], pinAnalInThermometerHeat1, pinDigiOutHeater1Relay, 0.25, 5.05, 1, 5000, 150, 0, 0)
 heatThermistor2 = PidControlledThermistor('Heater 2', [valMin, valMax], pinAnalInThermometerHeat2, pinDigiOutHeater2Relay, 0.25, 5.05, 2, 5000, 45.0, 4.2, 120)
+
+
 
 sample1Thermometer = thermistor('Sample Temperature 1', (valMin, valMax), pinAnalInThermometer1, pinVoltMax, pinVoltMin)
 sample2Thermometer = thermistor('Sample Temperature 2', (valMin, valMax), pinAnalInThermometer2, pinVoltMax, pinVoltMin)
@@ -94,7 +94,7 @@ class TuneThermostat1(SysAction):
                     heatThermistor1.vars['enable'].Set('on')
                     cfg.Sleep(5*60)
                     
-                    
+                   
 class SetThermostat2(SysAction):
     def __init__(self):
         self.temp = SysActionParamFloat(heatThermistor2.vars['T'])

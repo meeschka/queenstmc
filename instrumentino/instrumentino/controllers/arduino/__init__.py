@@ -193,30 +193,36 @@ class Arduino(InstrumentinoController):
         '''
         Takes the average of 6 values, and converts the analog reading into resistance
         '''   
-        R = [9900, 9850, 9920, 9850, 9980, 9940]        
-        '''
+        R = [9993, 9921, 9931, 10096, 10008, 10017, 10029, 10027, 10017, 10146, 10046, 9979]        
+        
         #No obvious effect with multisampling at this interval
+        '''
         i = 0
-        value = [0, 0, 0, 0, 0, 0]
-        while i<6:
+        val=0
+        temp = 0
+        value = [0, 0, 0, 0, 0, 0, 0, 0, 0]
+        while i<9:
             value[i] = self.AnalogRead(pin) if value[i] is not None else 0
-            print value[i]
+            #temp = self.AnalogRead(pin)   
+            #val += temp if temp != None else 0
             i +=1
-            time.sleep(0.005)
-            val= [value[1], value[2], value[3], value[4], value[5]]
-        #result = float(np.average(val))
-        result = value[0]
+            time.sleep(0.001)
+       # result = float(np.average(value))
+        #value.sort()
+        #val2 = value[2:7]
+        #result = np.average(val2)
+        print result        #result = val/5 if val != None else 0.
         
         '''
         result = self.AnalogRead(pin)
         if result is None:
             result = 0;
-        result = float(result)
 
-        result = float(R[pin]/((1023/result)-1)) if result != 0 else 0
+        result = float(R[pin]/((1023/result)-1)) if result != 0 else 0.
         #print(pin)        
         #print(time.time())
-        return result if result!= None else 0            
+        #print result
+        return result if result!= None else 0.            
  
     def DigitalWriteHigh(self, pin):
         '''
@@ -425,12 +431,12 @@ class Arduino(InstrumentinoController):
         #ie, pin at A0 is the first thermistor, second is at A1, etc...
         #if you want to use differnt analog pins, modify thermistorVars to take a thermName or something
 
-        A = (0.004045442,0.003903939,0.004027618,0.004044341,0.004059005,0.00397408)
-        B = (-1.4426E-06,2.21645E-05,5.79403E-07,-2.24057E-06,-4.08686E-06,9.56374E-06)
-        C = (-8.47204E-07,-9.45665E-07,-8.52131E-07,-8.40103E-07,-8.29844E-07,-8.80338E-07)
+        A = (0.004045442,0.003903939,0.004027618,0.004044341,0.004059005,0.00397408, 0.004045442,0.003903939,0.004027618,0.004044341,0.004059005,0.00397408)
+        B = (-1.4426E-06,2.21645E-05,5.79403E-07,-2.24057E-06,-4.08686E-06,9.56374E-06, -1.4426E-06,2.21645E-05,5.79403E-07,-2.24057E-06,-4.08686E-06,9.56374E-06)
+        C = (-8.47204E-07,-9.45665E-07,-8.52131E-07,-8.40103E-07,-8.29844E-07,-8.80338E-07, -8.47204E-07,-9.45665E-07,-8.52131E-07,-8.40103E-07,-8.29844E-07,-8.80338E-07)
         varis = (A[pin], B[pin], C[pin])
         return varis if varis!= None else 0   
-        
+                
     def tempCalcs(self, pin):
         self.varis = self.thermistorVars(pin)
         self.A = self.varis[0]
@@ -442,11 +448,12 @@ class Arduino(InstrumentinoController):
             R1 = (np.log(res)) if res != None else 0
         else:
             R1 = 0
-        R3 = (R1*R1*R1) if R1 != None else 0
+        
+        R3 = R1*R1*R1
 
         tmp = self.A+self.B*R1+self.C*R3 if R3 != None else 0
         tmp = (1/tmp)-273.15 if tmp != None and tmp != 0 else 0
-        
+        time.sleep(0.001)
         if np.isnan(tmp):
             return 0
         else:
@@ -529,12 +536,14 @@ class SysVarAnalogArduino(SysVarAnalog):
         self.pinInVoltsMin = pinInVoltsMin
         self.I2cDac = I2cDac
         self.therm = therm
+        self.recentT = []
         
     def FirstTimeOnline(self):
         if self.pinOut != None:
             self.GetController().PinModeOut(self.pinOut)
             if self.highFreqPWM:
                 self.GetController().SetHighFreqPwm(self.pinOut)
+        self.recentT = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
     
     def GetUnipolarRange(self):
         return self.GetUnipolarMax() - self.GetUnipolarMin()
@@ -546,7 +555,17 @@ class SysVarAnalogArduino(SysVarAnalog):
             return sign * (self.GetUnipolarMin() + (self.GetUnipolarRange() * fraction)) if fraction != None else None
         else:
             tmp = self.GetController().tempCalcs(self.pinIn)
-            return tmp if tmp != None else 0
+            self.recentT.append(tmp)
+            del self.recentT[0]
+            currentT = list(self.recentT)
+            currentT.sort()
+            currentT = np.average(currentT[3:9])
+            if np.isnan(currentT):
+                return 0
+            #tmp = self.GetController().redundantTempCalcs(self.pinAnalIn)
+            
+            #return tmp if tmp != None else 0  
+            return float(currentT) if currentT != None else 0
             
     def SetFunc(self, value):
         fraction = (abs(value) - self.GetUnipolarMin()) / self.GetUnipolarRange()
@@ -623,12 +642,13 @@ class SysVarPidRelayArduino(SysVarAnalog):
         self.ki = ki
         self.kd = kd
         self.therm = therm
-
+        self.recentT = []
         
         
     def FirstTimeOnline(self):
         self.GetController().PidRelayCreate(self.pidVar, self.pinAnalIn, self.pinDigiOut, self.windowSizeMs, self.kp, self.ki, self.kd)
         self.GetController().PidRelayEnable(self.pidVar, 0)
+        self.recentT = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
         
     def GetFunc(self):
         if self.therm is False:
@@ -637,9 +657,22 @@ class SysVarPidRelayArduino(SysVarAnalog):
         else:
             #calculate temperature
             tmp = self.GetController().tempCalcs(self.pinAnalIn)
+            print tmp
+            self.recentT.append(tmp)
+            del self.recentT[0]
+            print self.recentT
+            currentT = list(self.recentT)
+            currentT.sort()
+            print currentT
+            currentT = np.average(currentT[3:9])
+            print currentT
+            if np.isnan(currentT):
+                return 0
+                print("NAN")
             #tmp = self.GetController().redundantTempCalcs(self.pinAnalIn)
             
-            return tmp if tmp != None else 0  
+            #return tmp if tmp != None else 0  
+            return float(currentT) if currentT != None else 0
 
 
             
