@@ -18,11 +18,11 @@ from instrumentino.SteadyStateModule import SteadyStateClass
 '''
 # Arduino pin assignments
 
-pinAnalInThermometer1 = int(3)
-pinAnalInThermometer2 = int(6)
+pinAnalInThermometer1 = int(2)
+pinAnalInThermometer2 = int(3)
 
-pinAnalInThermometer3 = int(7)
-pinAnalInThermometer4 = int(8)
+pinAnalInThermometer3 = int(4)
+pinAnalInThermometer4 = int(5)
 
 pinAnalInThermometerHeat1 = int(0)
 pinAnalInThermometerHeat2 = int(1)
@@ -43,7 +43,7 @@ valMin = 10
 #heatThermistor1 = AnalogPinCallibration('Heater Temperature', [15, 1000], pinAnalInThermometerInHeat, pinVoltMax, pinVoltMin)
 
 
-heatThermistor1 = PidControlledThermistor('Heater 1', [valMin, valMax], pinAnalInThermometerHeat1, pinDigiOutHeater1Relay, 0.25, 5.05, 1, 5000, 150, 0, 0)
+heatThermistor1 = PidControlledThermistor('Heater 1', [valMin, valMax], pinAnalInThermometerHeat1, pinDigiOutHeater1Relay, 0.25, 5.05, 1, 5000, 500, 4, 1)
 heatThermistor2 = PidControlledThermistor('Heater 2', [valMin, valMax], pinAnalInThermometerHeat2, pinDigiOutHeater2Relay, 0.25, 5.05, 2, 5000, 45.0, 4.2, 120)
 
 
@@ -83,8 +83,8 @@ class TuneThermostat1(SysAction):
         SysAction.__init__(self, 'Thermostat tuning 1', (self.kp, self.ki, self.kd))
 
     def Command(self):
-#         boxThermostat.vars['T'].Tune(self.kp.Get(), self.ki.Get(), self.kd.Get())
-#         cfg.Sleep(3)
+        heatThermistor1.vars['T'].Tune(self.kp.Get(), self.ki.Get(), self.kd.Get())
+        cfg.Sleep(3)
         
         for p in range(1,10):
             for i in range(1,10):
@@ -114,8 +114,8 @@ class TuneThermostat2(SysAction):
         SysAction.__init__(self, 'Thermostat tuning 2', (self.kp, self.ki, self.kd))
 
     def Command(self):
-#         boxThermostat.vars['T'].Tune(self.kp.Get(), self.ki.Get(), self.kd.Get())
-#         cfg.Sleep(3)
+        heatThermistor2.vars['T'].Tune(self.kp.Get(), self.ki.Get(), self.kd.Get())
+        cfg.Sleep(3)
         
         for p in range(1,10):
             for i in range(1,10):

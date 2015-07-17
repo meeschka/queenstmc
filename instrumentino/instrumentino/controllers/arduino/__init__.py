@@ -218,10 +218,9 @@ class Arduino(InstrumentinoController):
         if result is None:
             result = 0;
 
-        result = float(R[pin]/((1023/result)-1)) if result != 0 else 0.
-        #print(pin)        
-        #print(time.time())
-        #print result
+        
+        result =result if result != 1023 else 0
+        #result = float(R[pin]/((1023/result)-1)) if result != 0 else 0.
         return result if result!= None else 0.            
  
     def DigitalWriteHigh(self, pin):
@@ -438,6 +437,7 @@ class Arduino(InstrumentinoController):
         return varis if varis!= None else 0   
                 
     def tempCalcs(self, pin):
+        '''
         self.varis = self.thermistorVars(pin)
         self.A = self.varis[0]
         self.B = self.varis[1]
@@ -460,7 +460,11 @@ class Arduino(InstrumentinoController):
             return float(tmp) if tmp !=None else 0
          
         return tmp if tmp != None else 0         
- 
+        '''
+        #to return resistance values for thermistor calibration
+        res = self.AnalogReadMultiRes(pin)
+        return res if res != None else 0
+        
     def redundantTempCalcs(self, pin):
         #Reads two thermistors to get average temp reading
         #Assumes second thermistor pin is next to first
@@ -560,12 +564,13 @@ class SysVarAnalogArduino(SysVarAnalog):
             currentT = list(self.recentT)
             currentT.sort()
             currentT = np.average(currentT[3:9])
+            currentT = float(currentT)
             if np.isnan(currentT):
                 return 0
             #tmp = self.GetController().redundantTempCalcs(self.pinAnalIn)
             
             #return tmp if tmp != None else 0  
-            return float(currentT) if currentT != None else 0
+            return round(currentT, 2) if currentT != None else 0
             
     def SetFunc(self, value):
         fraction = (abs(value) - self.GetUnipolarMin()) / self.GetUnipolarRange()
@@ -657,22 +662,19 @@ class SysVarPidRelayArduino(SysVarAnalog):
         else:
             #calculate temperature
             tmp = self.GetController().tempCalcs(self.pinAnalIn)
-            print tmp
             self.recentT.append(tmp)
             del self.recentT[0]
-            print self.recentT
             currentT = list(self.recentT)
             currentT.sort()
-            print currentT
             currentT = np.average(currentT[3:9])
-            print currentT
+            currentT = float(currentT)
             if np.isnan(currentT):
                 return 0
                 print("NAN")
             #tmp = self.GetController().redundantTempCalcs(self.pinAnalIn)
             
             #return tmp if tmp != None else 0  
-            return float(currentT) if currentT != None else 0
+            return round(currentT, 2) if currentT != None else 0
 
 
             

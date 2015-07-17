@@ -1,0 +1,1 @@
+--- Run method ---14:17:04 Thermostat 1: T=40.0--- Run method ---14:39:07 Thermostat tuning 1: kp=0.06, ki=0.026, kd=0.18
