@@ -490,7 +490,7 @@ void cmdSerReceive(char **argV) {
  * The setup function is called once at startup of the sketch
  */
 void setup() {
-        analogReference(EXTERNAL);
+        //analogReference(EXTERNAL);
 	Serial.begin(SERIAL0_BAUD);
 	pMsg = msg;
 

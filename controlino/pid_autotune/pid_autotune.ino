@@ -8,14 +8,14 @@
 byte ATuneModeRemember=2;
 double input=80;
 double output=25;
-double setpoint=35;
-double kp=20,ki=5,kd=2;
+double setpoint=45;
+double kp=2,ki=0.5,kd=2;
 
 //input will be temp in C, output will be relay time in ms
 
-double kpmodel=1.5, taup=100, theta[50];
-double outputStart=50;
-double aTuneStep=10, aTuneNoise=0.5, aTuneStartValue=100;
+//double kpmodel=1.5, taup=100, theta[50];
+//double outputStart=5;
+double aTuneStep=50, aTuneNoise=1, aTuneStartValue=100;
 
 int thermPin = A0;
 int relayPin = 9;
@@ -144,7 +144,7 @@ void SerialReceive()
 double tempCalc(int anVal, int n){
   double result = 0;
   anVal = double(anVal);
-  double Rfix[] = {9990.0, 9850.0};   //measured resistance of fixed resistor, here nominally 10k
+  double Rfix[] = {9900.0, 9850.0};   //measured resistance of fixed resistor, here nominally 10k
   //steinhart  variables for each thermistor determined experimentally
   double A[] = {0.004045442, 0.003903939};
   double B[] = {-1.4426e-06, 2.21645e-05};
