@@ -444,6 +444,7 @@ class Arduino(InstrumentinoController):
         self.C = self.varis[2]
         
         res = self.AnalogReadMultiRes(pin)
+        '''
         if res > 0:
             R1 = (np.log(res)) if res != None else 0
         else:
@@ -459,7 +460,12 @@ class Arduino(InstrumentinoController):
         else:
             return float(tmp) if tmp !=None else 0
          
-        return tmp if tmp != None else 0         
+        return tmp if tmp != None else 0  
+        '''
+        if np.isnan(res):
+            return 0
+        else:
+            return float(res) if tmp != None else 0
  
     def redundantTempCalcs(self, pin):
         #Reads two thermistors to get average temp reading
