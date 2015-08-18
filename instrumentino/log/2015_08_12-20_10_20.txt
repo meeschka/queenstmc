@@ -1,0 +1,1 @@
+--- Run method ---20:11:20 Heat pulse: Time=00:00:30.000, heater=1--- Run method ---20:12:12 Blink Heat: blink time ms=100, heat blink on?=1--- Run method ---20:12:41 Thermostat 1: T=50.0

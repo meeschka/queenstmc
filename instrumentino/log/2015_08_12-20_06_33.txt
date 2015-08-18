@@ -1,0 +1,1 @@
+--- Run method ---20:07:00 Thermostat 1: T=50.0

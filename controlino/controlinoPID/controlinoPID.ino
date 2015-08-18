@@ -1,5 +1,6 @@
 
 
+
 /*
 	controlino.cpp - Library for controling an Arduino using the USB
 	Created by Joel Koenka, April 2014
@@ -19,6 +20,7 @@
 #include "SoftwareSerial.h"
 #include "string.h"
 #include <PID_v1.h>
+#include <eRCaGuy_NewAnalogRead.h>
 
 //for testing
 int q=0;
@@ -115,7 +117,25 @@ int blinkingPin;
 unsigned long blinkLastChangeMs;
 unsigned long blinkingDelayMs;
 
-
+//Oversampling Variables
+byte pin = A0;
+byte bitsOfResolution = 14; //commanded oversampled resolution
+unsigned long numSamplesToAvg = 1; //number of samples AT THE OVERSAMPLED RESOLUTION that you want to take and average
+ADC_prescaler_t ADCSpeed = ADC_FAST;
+/*Speed options to store into ADCSpeed are as follows:
+  ADC_PRESCALER_128_CLOCK_125KHZ    
+    ADC_DEFAULT (same as above)                       
+    ADC_SLOW (same as above)                          
+  ADC_PRESCALER_64_CLOCK_250KHZ     
+  ADC_PRESCALER_32_CLOCK_500KHZ     
+  ADC_PRESCALER_16_CLOCK_1MHZ       
+    ADC_FAST (same as above)                          
+  CAUTION_ADC_PRESCALER_8_CLOCK_2MHZ
+  CAUTION_ADC_PRESCALER_4_CLOCK_4MHZ
+  CAUTION_ADC_PRESCALER_2_CLOCK_8MHZ
+NB: if you change the ADC clock speed, it doesn't just affect this library, it also affects the 
+ADC sample rate when calling the standard core Arduino analogRead() function.
+*/
 // ------------------------------------------------------------
 // Utility functions
 // ------------------------------------------------------------
@@ -184,7 +204,7 @@ void cmdRead(int argC, char **argV) {
 		if (strcasecmp(pinType, "D") == 0) {
 			value = digitalRead(pin);
 		} else if (strcasecmp(pinType, "A") == 0) {
-			value = analogRead(pin);
+			value = adc.newAnalogRead(pin);
 		} else {
 			return;
 		}
@@ -490,9 +510,12 @@ void cmdSerReceive(char **argV) {
  * The setup function is called once at startup of the sketch
  */
 void setup() {
-        //analogReference(EXTERNAL);
+        analogReference(EXTERNAL);
 	Serial.begin(SERIAL0_BAUD);
 	pMsg = msg;
+        adc.setADCSpeed(ADCSpeed);
+        adc.setBitsOfResolution(bitsOfResolution);
+        adc.setNumSamplesToAvg(numSamplesToAvg);
 
 /*        hardSerHandler[0] = &Serial1;
 
@@ -550,11 +573,16 @@ void loop() {
 	// Take care PID-relay variables
 	for (i = 0; i < PID_RELAY_MAX_VARS; i++) {
 		if (pidRelayDescs[i].isOn) {
-			pidRelayDescs[i].inputVar = tempCalc(analogRead(pidRelayDescs[i].pinAnalIn), i);
+                        pidRelayDescs[i].inputVar = tempCalc(analogRead(pidRelayDescs[i].pinAnalIn), i);
+			//pidRelayDescs[i].inputVar = tempCalc(adc.newAnalogRead(pidRelayDescs[i].pinAnalIn), i);
+                        //newAnalogRead breaks pid, probably a timing thing
+
                         //test = pidRelayDescs[i].inputVar;
 			//test = analogRead(pidRelayDescs[i].pinAnalIn);
                         test=pidRelayDescs[i].outputVar;
                         pidRelayDescs[i].handler->Compute();
+                        
+                        
 
 			// turn relay on/off according to the PID output
 			curMs = millis();

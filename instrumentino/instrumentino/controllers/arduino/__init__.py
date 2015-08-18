@@ -193,34 +193,18 @@ class Arduino(InstrumentinoController):
         '''
         Takes the average of 6 values, and converts the analog reading into resistance
         '''   
-        R = [9993, 9921, 9931, 10096, 10008, 10017, 10029, 10027, 10017, 10146, 10046, 9979]        
-        
-        #No obvious effect with multisampling at this interval
-        '''
-        i = 0
-        val=0
-        temp = 0
-        value = [0, 0, 0, 0, 0, 0, 0, 0, 0]
-        while i<9:
-            value[i] = self.AnalogRead(pin) if value[i] is not None else 0
-            #temp = self.AnalogRead(pin)   
-            #val += temp if temp != None else 0
-            i +=1
-            time.sleep(0.001)
-       # result = float(np.average(value))
-        #value.sort()
-        #val2 = value[2:7]
-        #result = np.average(val2)
-        print result        #result = val/5 if val != None else 0.
-        
-        '''
+        R = [10125, 10028, 99761, 10096, 9989, 9999, 10029, 10027, 10017, 9993, 9921, 9931]        
+        time.sleep(0.01)
         result = self.AnalogRead(pin)
         if result is None:
             result = 0;
+        if result is 16383:
+            return 0.
+        if result is 0:
+            return 0.
 
-        
-        result =result if result != 1023 else 0
-        #result = float(R[pin]/((1023/result)-1)) if result != 0 else 0.
+       
+        result = float(R[pin]/((16383./result)-1.)) if result != 16383 else 0
         return result if result!= None else 0.            
  
     def DigitalWriteHigh(self, pin):
@@ -265,7 +249,7 @@ class Arduino(InstrumentinoController):
         kd - the Kd parameter
         '''
         self._sendData('PidRelayCreate %d %d %d %d %f %f %f'%(pidVar, pinAnalIn, pinDigiOut, windowSizeMs, kp, ki, kd), wait=True)
-            
+        print("RelayCreate")    
     def PidRelaySet(self, pidVar, setPoint):
         '''
         Set the setpoint of a PID controlled relay variable and start striving towards it
@@ -273,6 +257,7 @@ class Arduino(InstrumentinoController):
         setPoint - The value we're striving for
         '''
         self._sendData('PidRelaySet %d %d'%(pidVar, setPoint), wait=True)
+        print("RelaySet")
             
     def PidRelayTune(self, pidVar, kp, ki, kd):
         '''
@@ -291,7 +276,7 @@ class Arduino(InstrumentinoController):
         enable - True/False for enable/disable
         '''
         self._sendData('PidRelayEnable %d %d'%(pidVar, 1 if enable else 0), wait=True)
-    
+        print("RelayEnable")
     def HardSerConnect(self, baudrate, port=1):
         '''
         Setup a hardware serial port for communication
@@ -430,21 +415,21 @@ class Arduino(InstrumentinoController):
         #ie, pin at A0 is the first thermistor, second is at A1, etc...
         #if you want to use differnt analog pins, modify thermistorVars to take a thermName or something
 
-        A = (0.004045442,0.003903939,0.004027618,0.004044341,0.004059005,0.00397408, 0.004045442,0.003903939,0.004027618,0.004044341,0.004059005,0.00397408)
-        B = (-1.4426E-06,2.21645E-05,5.79403E-07,-2.24057E-06,-4.08686E-06,9.56374E-06, -1.4426E-06,2.21645E-05,5.79403E-07,-2.24057E-06,-4.08686E-06,9.56374E-06)
-        C = (-8.47204E-07,-9.45665E-07,-8.52131E-07,-8.40103E-07,-8.29844E-07,-8.80338E-07, -8.47204E-07,-9.45665E-07,-8.52131E-07,-8.40103E-07,-8.29844E-07,-8.80338E-07)
+        A = (5.7869E-03,5.6757E-03,7.3853E-03,6.1484E-03,6.1672E-03,5.9734E-03)
+        B = (-2.7271E-04,-2.5713E-04,-3.9374E-04,-3.2742E-04,-3.2992E-04,-3.0190E-04)
+        C = (1.1184E-07,6.3526E-08,3.3169E-07,2.9154E-07,2.9495E-07,2.0753E-07)
         varis = (A[pin], B[pin], C[pin])
         return varis if varis!= None else 0   
                 
     def tempCalcs(self, pin):
-        '''
+        
         self.varis = self.thermistorVars(pin)
         self.A = self.varis[0]
         self.B = self.varis[1]
         self.C = self.varis[2]
         
         res = self.AnalogReadMultiRes(pin)
-        '''
+        
         if res > 0:
             R1 = (np.log(res)) if res != None else 0
         else:
@@ -459,28 +444,23 @@ class Arduino(InstrumentinoController):
             return 0
         else:
             return float(tmp) if tmp !=None else 0
-         
-<<<<<<< HEAD
+        
         return tmp if tmp != None else 0         
         '''
         #to return resistance values for thermistor calibration
-        res = self.AnalogReadMultiRes(pin)
-        return res if res != None else 0
+
         
-=======
-        return tmp if tmp != None else 0  
-        '''
         if np.isnan(res):
             return 0
         else:
-            return float(res) if tmp != None else 0
- 
->>>>>>> trial1
+            return float(res) if res != None else 0
+        '''
+
     def redundantTempCalcs(self, pin):
         #Reads two thermistors to get average temp reading
         #Assumes second thermistor pin is next to first
-        pin1 = pin
-        pin2 = pin1 + 1
+        pin1 = 0
+        pin2 = 1
     
         temp1 = self.tempCalcs(pin1)
         temp2 = self.tempCalcs(pin2)
@@ -558,7 +538,8 @@ class SysVarAnalogArduino(SysVarAnalog):
             self.GetController().PinModeOut(self.pinOut)
             if self.highFreqPWM:
                 self.GetController().SetHighFreqPwm(self.pinOut)
-        self.recentT = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+        self.recentT = [20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20]
+        
     
     def GetUnipolarRange(self):
         return self.GetUnipolarMax() - self.GetUnipolarMin()
@@ -566,18 +547,19 @@ class SysVarAnalogArduino(SysVarAnalog):
     def GetFunc(self):
         if self.therm is False:
             fraction = self.GetController().AnalogReadFraction(self.pinIn, self.pinInVoltsMax, self.pinInVoltsMin)
-            sign = 1 if self.GetPolarityPositiveFunc() else -1
-            return sign * (self.GetUnipolarMin() + (self.GetUnipolarRange() * fraction)) if fraction != None else None
+            return (self.range[0] + (self.range[1] - self.range[0]) * fraction) if fraction != None else None
         else:
+            #calculate temperature
             tmp = self.GetController().tempCalcs(self.pinIn)
             self.recentT.append(tmp)
             del self.recentT[0]
             currentT = list(self.recentT)
             currentT.sort()
-            currentT = np.average(currentT[3:9])
+            currentT = np.average(currentT[3:13])
             currentT = float(currentT)
             if np.isnan(currentT):
                 return 0
+                print("NAN")
             #tmp = self.GetController().redundantTempCalcs(self.pinAnalIn)
             
             #return tmp if tmp != None else 0  
@@ -647,7 +629,7 @@ class SysVarPidRelayArduino(SysVarAnalog):
     '''
     def __init__(self, name, range, pidVar, windowSizeMs, kp, ki, kd, pinAnalIn, pinDigiOut, compName='', helpLine='', units='', PreSetFunc=None, pinInVoltsMax=5, pinInVoltsMin=0, PostGetFunc=None, therm=False):
         SysVarAnalog.__init__(self, name, range, Arduino, compName, helpLine, True, units, PreSetFunc, PostGetFunc)
-        self.pinAnalIn = pinAnalIn
+        self.pinIn = pinAnalIn
         self.pinDigiOut = pinDigiOut
         self.pinInVoltsMax = pinInVoltsMax
         self.pinInVoltsMin = pinInVoltsMin
@@ -662,22 +644,25 @@ class SysVarPidRelayArduino(SysVarAnalog):
         
         
     def FirstTimeOnline(self):
-        self.GetController().PidRelayCreate(self.pidVar, self.pinAnalIn, self.pinDigiOut, self.windowSizeMs, self.kp, self.ki, self.kd)
+        self.GetController().PidRelayCreate(self.pidVar, self.pinIn, self.pinDigiOut, self.windowSizeMs, self.kp, self.ki, self.kd)
         self.GetController().PidRelayEnable(self.pidVar, 0)
-        self.recentT = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-        
+        time.sleep(0.5)
+        self.recentT = [20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20]
+        print("RecentT")
     def GetFunc(self):
         if self.therm is False:
-            fraction = self.GetController().AnalogReadFraction(self.pinAnalIn, self.pinInVoltsMax, self.pinInVoltsMin)
+            fraction = self.GetController().AnalogReadFraction(self.pinIn, self.pinInVoltsMax, self.pinInVoltsMin)
             return (self.range[0] + (self.range[1] - self.range[0]) * fraction) if fraction != None else None
         else:
             #calculate temperature
-            tmp = self.GetController().tempCalcs(self.pinAnalIn)
+            time.sleep(0.05)
+            print("GetFunc")
+            tmp = self.GetController().tempCalcs(self.pinIn)
             self.recentT.append(tmp)
             del self.recentT[0]
             currentT = list(self.recentT)
             currentT.sort()
-            currentT = np.average(currentT[3:9])
+            currentT = np.average(currentT[3:13])
             currentT = float(currentT)
             if np.isnan(currentT):
                 return 0
@@ -687,19 +672,20 @@ class SysVarPidRelayArduino(SysVarAnalog):
             #return tmp if tmp != None else 0  
             return round(currentT, 2) if currentT != None else 0
 
-
             
     def SetFunc(self, value):
         # write the setpoint in the range of the analog input pin
         # changed instrumentino so now arduino does temp calcs
 
         self.GetController().PidRelaySet(self.pidVar, value)
+        time.sleep(0.1)
         
         #based on difference between setTemp and temp, find amount of time t to activate heater
         
     def Enable(self, enable):
         
         self.GetController().PidRelayEnable(self.pidVar, enable)
+        
         
         
     def Tune(self, kp, ki, kd):

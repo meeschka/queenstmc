@@ -1,3 +1,4 @@
+
 # coding=UTF-8
 
 from __future__ import division
@@ -24,18 +25,19 @@ pinAnalInThermometer2 = int(3)
 pinAnalInThermometer3 = int(4)
 pinAnalInThermometer4 = int(5)
 
+
 pinAnalInThermometerHeat1 = int(0)
 pinAnalInThermometerHeat2 = int(1)
 
 
-pinDigiOutHeater1Relay = 9
-pinDigiOutHeater2Relay = 8
+pinDigiOutHeater1Relay = 8
+pinDigiOutHeater2Relay = 9
 
 pinVoltMax = 5.12
 pinVoltMin = 0 
 
 valMax = 100
-valMin = 10
+valMin = 0
 '''
 *** System components
 '''
@@ -53,7 +55,6 @@ sample2Thermometer = thermistor('Sample Temperature 2', (valMin, valMax), pinAna
 
 sample3Thermometer = thermistor('Sample Temperature 3', (valMin, valMax), pinAnalInThermometer3,  pinVoltMax, pinVoltMin)
 sample4Thermometer = thermistor('Sample Temperature 4', (valMin, valMax), pinAnalInThermometer4,  pinVoltMax, pinVoltMin)
-
 
 digiPins1 = DigitalPins('digital pins', (SysVarDigitalArduino('Heat Element 1', pinDigiOutHeater1Relay),))
 digiPins2 = DigitalPins('digital pins', (SysVarDigitalArduino('Heat Element 2', pinDigiOutHeater2Relay),))
