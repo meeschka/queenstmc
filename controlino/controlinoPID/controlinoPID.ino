@@ -680,7 +680,7 @@ void loop() {
 
 
 float tempCalc(int anVal, int n){
-  float result = 0;
+  float result, result3 = 0;
   anVal = float(anVal);
   float Rfix[] = {9900.0, 9850.0};
   float A[] = {0.004045442, 0.003903939};
@@ -689,7 +689,8 @@ float tempCalc(int anVal, int n){
 
   result = Rfix[n] / ((1023.0/anVal)-1.0);
   result = log(result);
-  //result = 1/(0.004045442 + (1.4426e-6)*result + (-8.47204e-7)*result*result*result);
+  result3 = result*result*result;
+  //result = 1/(0.004045442 + (1.4426e-6)*result + (-8.47204e-7)*result3);
   result = (1 / ( A[n] + B[n]*result + C[n]*result*result*result))-273.15;
   return result;
   

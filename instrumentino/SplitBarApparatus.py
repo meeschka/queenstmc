@@ -91,7 +91,7 @@ class TuneThermostat1(SysAction):
             for i in range(1,10):
                 for d in range(1,10):
                     heatThermistor1.vars['T'].Tune(p, i, d)
-                    heatThermistor1.vars['T'].Set(30)
+                    #heatThermistor1.vars['T'].Set(30)
                     heatThermistor1.vars['enable'].Set('on')
                     cfg.Sleep(5*60)
                     
@@ -122,7 +122,7 @@ class TuneThermostat2(SysAction):
             for i in range(1,10):
                 for d in range(1,10):
                     heatThermistor2.vars['T'].Tune(p, i, d)
-                    heatThermistor2.vars['T'].Set(30)
+                    #heatThermistor2.vars['T'].Set(30)
                     heatThermistor2.vars['enable'].Set('on')
                     cfg.Sleep(5*60)
                     

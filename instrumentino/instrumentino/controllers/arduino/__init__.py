@@ -650,7 +650,7 @@ class SysVarPidRelayArduino(SysVarAnalog):
     def FirstTimeOnline(self):
         self.GetController().PidRelayCreate(self.pidVar, self.pinIn, self.pinDigiOut, self.windowSizeMs, self.kp, self.ki, self.kd)
         self.GetController().PidRelayEnable(self.pidVar, 0)
-        time.sleep(0.5)
+        time.sleep(0.05)
         self.recentT = [20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20]
         self.varis = self.GetController().thermistorVars(self.pinIn)
     def GetFunc(self):
