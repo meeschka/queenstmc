@@ -189,11 +189,11 @@ class Arduino(InstrumentinoController):
         except KeyError:
             self.pinValuesCache['A' + str(pin)] = 0
         
-    def AnalogReadMultiRes(self, pin):
+    def AnalogReadMultiRes(self, pin, R):
         '''
         Takes the average of 6 values, and converts the analog reading into resistance
         '''   
-        R = [10125, 10028, 99761, 10096, 9989, 9999, 10029, 10027, 10017, 9993, 9921, 9931]        
+        #R = [10125, 10028, 99761, 10096, 9989, 9999, 10029, 10027, 10017, 9993, 9921, 9931]        
         time.sleep(0.01)
         result = self.AnalogRead(pin)
         if result is None:
@@ -204,7 +204,7 @@ class Arduino(InstrumentinoController):
             return 0.
 
        
-        result = float(R[pin]/((16383./result)-1.)) if result != 16383 else 0
+        result = float(R/((16383./result)-1.)) if result != 16383 else 0
         return result if result!= None else 0.            
  
     def DigitalWriteHigh(self, pin):
@@ -418,17 +418,19 @@ class Arduino(InstrumentinoController):
         A = (5.7869E-03,5.6757E-03,7.3853E-03,6.1484E-03,6.1672E-03,5.9734E-03)
         B = (-2.7271E-04,-2.5713E-04,-3.9374E-04,-3.2742E-04,-3.2992E-04,-3.0190E-04)
         C = (1.1184E-07,6.3526E-08,3.3169E-07,2.9154E-07,2.9495E-07,2.0753E-07)
-        varis = (A[pin], B[pin], C[pin])
+        R = [10125, 10028, 99761, 10096, 9989, 9999, 10029, 10027, 10017, 9993, 9921, 9931]        
+        
+        varis = (A[pin], B[pin], C[pin], R[pin])
         return varis if varis!= None else 0   
                 
-    def tempCalcs(self, pin, A, B, C):
+    def tempCalcs(self, pin, A, B, C, R):
         '''
         self.varis = self.thermistorVars(pin)
         self.A = self.varis[0]
         self.B = self.varis[1]
         self.C = self.varis[2]
         '''
-        res = self.AnalogReadMultiRes(pin)
+        res = self.AnalogReadMultiRes(pin, R)
         
         if res > 0:
             R1 = (np.log(res)) if res != None else 0
@@ -532,7 +534,7 @@ class SysVarAnalogArduino(SysVarAnalog):
         self.I2cDac = I2cDac
         self.therm = therm
         self.recentT = []
-        self.varis=[0, 0, 0]
+        self.varis=[0, 0, 0, 0]
         
     def FirstTimeOnline(self):
         if self.pinOut != None:
@@ -551,7 +553,7 @@ class SysVarAnalogArduino(SysVarAnalog):
             return (self.range[0] + (self.range[1] - self.range[0]) * fraction) if fraction != None else None
         else:
             #calculate temperature
-            tmp = self.GetController().tempCalcs(self.pinIn, self.varis[0], self.varis[1], self.varis[2])
+            tmp = self.GetController().tempCalcs(self.pinIn, self.varis[0], self.varis[1], self.varis[2], self.varis[3])
             self.recentT.append(tmp)
             del self.recentT[0]
             currentT = list(self.recentT)
@@ -642,7 +644,7 @@ class SysVarPidRelayArduino(SysVarAnalog):
         self.kd = kd
         self.therm = therm
         self.recentT = []
-        self.varis = [0, 0, 0]
+        self.varis = [0, 0, 0, 0]
         
         
     def FirstTimeOnline(self):
@@ -659,7 +661,7 @@ class SysVarPidRelayArduino(SysVarAnalog):
             #calculate temperature
             time.sleep(0.005)
             print("GetFunc")
-            tmp = self.GetController().tempCalcs(self.pinIn, self.varis[0], self.varis[1], self.varis[2])
+            tmp = self.GetController().tempCalcs(self.pinIn, self.varis[0], self.varis[1], self.varis[2], self.varis[3])
             self.recentT.append(tmp)
             del self.recentT[0]
             currentT = list(self.recentT)
