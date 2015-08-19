@@ -421,13 +421,13 @@ class Arduino(InstrumentinoController):
         varis = (A[pin], B[pin], C[pin])
         return varis if varis!= None else 0   
                 
-    def tempCalcs(self, pin):
-        
+    def tempCalcs(self, pin, A, B, C):
+        '''
         self.varis = self.thermistorVars(pin)
         self.A = self.varis[0]
         self.B = self.varis[1]
         self.C = self.varis[2]
-        
+        '''
         res = self.AnalogReadMultiRes(pin)
         
         if res > 0:
@@ -437,7 +437,7 @@ class Arduino(InstrumentinoController):
         
         R3 = R1*R1*R1
 
-        tmp = self.A+self.B*R1+self.C*R3 if R3 != None else 0
+        tmp = A+B*R1+C*R3 if R3 != None else 0
         tmp = (1/tmp)-273.15 if tmp != None and tmp != 0 else 0
         time.sleep(0.001)
         if np.isnan(tmp):
@@ -532,6 +532,7 @@ class SysVarAnalogArduino(SysVarAnalog):
         self.I2cDac = I2cDac
         self.therm = therm
         self.recentT = []
+        self.varis=[0, 0, 0]
         
     def FirstTimeOnline(self):
         if self.pinOut != None:
@@ -539,7 +540,7 @@ class SysVarAnalogArduino(SysVarAnalog):
             if self.highFreqPWM:
                 self.GetController().SetHighFreqPwm(self.pinOut)
         self.recentT = [20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20]
-        
+        self.varis = self.GetController().thermistorVars(self.pinIn)
     
     def GetUnipolarRange(self):
         return self.GetUnipolarMax() - self.GetUnipolarMin()
@@ -550,7 +551,7 @@ class SysVarAnalogArduino(SysVarAnalog):
             return (self.range[0] + (self.range[1] - self.range[0]) * fraction) if fraction != None else None
         else:
             #calculate temperature
-            tmp = self.GetController().tempCalcs(self.pinIn)
+            tmp = self.GetController().tempCalcs(self.pinIn, self.varis[0], self.varis[1], self.varis[2])
             self.recentT.append(tmp)
             del self.recentT[0]
             currentT = list(self.recentT)
@@ -641,6 +642,7 @@ class SysVarPidRelayArduino(SysVarAnalog):
         self.kd = kd
         self.therm = therm
         self.recentT = []
+        self.varis = [0, 0, 0]
         
         
     def FirstTimeOnline(self):
@@ -648,16 +650,16 @@ class SysVarPidRelayArduino(SysVarAnalog):
         self.GetController().PidRelayEnable(self.pidVar, 0)
         time.sleep(0.5)
         self.recentT = [20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20]
-        print("RecentT")
+        self.varis = self.GetController().thermistorVars(self.pinIn)
     def GetFunc(self):
         if self.therm is False:
             fraction = self.GetController().AnalogReadFraction(self.pinIn, self.pinInVoltsMax, self.pinInVoltsMin)
             return (self.range[0] + (self.range[1] - self.range[0]) * fraction) if fraction != None else None
         else:
             #calculate temperature
-            time.sleep(0.05)
+            time.sleep(0.005)
             print("GetFunc")
-            tmp = self.GetController().tempCalcs(self.pinIn)
+            tmp = self.GetController().tempCalcs(self.pinIn, self.varis[0], self.varis[1], self.varis[2])
             self.recentT.append(tmp)
             del self.recentT[0]
             currentT = list(self.recentT)
