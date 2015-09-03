@@ -36,8 +36,8 @@ pinDigiOutHeater2Relay = 9
 pinVoltMax = 5.12
 pinVoltMin = 0 
 
-valMax = 100
-valMin = 0
+valMax = 80
+valMin = 20
 '''
 *** System components
 '''
@@ -149,7 +149,9 @@ class heatPulse(SysAction):
 
 class blinkHeat(SysAction):
     def __init__(self):
-        self.milliseconds = SysActionParamInt('blink time ms', [0, 2000])
+        self.milliseconds = SysActionParamInt('blink time ms', [0, 8000])
+              
+        
         #self.pulseTime = SysActionParamInt('pulse time, ms', [0, 5000])
         #self.milliseconds = SysActionParamFloat(name='blink time ms', range=[0, 2000])
         self.trigger = SysActionParamInt('heat blink on?', [0, 1])

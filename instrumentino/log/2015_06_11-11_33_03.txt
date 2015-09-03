@@ -1,1 +1,0 @@
---- Run method ---11:33:22 Blink Heat: blink time ms=1000, heat blink on?=1

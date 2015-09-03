@@ -1,1 +1,0 @@
---- Run method ---13:23:31 Blink Heat: blink time ms=10, heat blink on?=0--- Run method ---13:23:45 Blink Heat: blink time ms=10, heat blink on?=1--- Run method ---13:42:31 Blink Heat: blink time ms=20, heat blink on?=1--- Run method ---13:57:53 Blink Heat: blink time ms=40, heat blink on?=1

@@ -557,7 +557,7 @@ void loop() {
 	// Take care of blinking heater - set time that heater is on for every 5000ms window
 	if (startBlinking == true) {
 		curMs = millis();
-		if (curMs - blinkLastChangeMs > 5000)
+		if (curMs - blinkLastChangeMs > blinkingDelayMs*2)
                         {
 			blinkLastChangeMs = curMs;
                         }
@@ -573,7 +573,8 @@ void loop() {
 	// Take care PID-relay variables
 	for (i = 0; i < PID_RELAY_MAX_VARS; i++) {
 		if (pidRelayDescs[i].isOn) {
-                        pidRelayDescs[i].inputVar = tempCalc(analogRead(pidRelayDescs[i].pinAnalIn), i);
+                        pidRelayDescs[i].inputVar = analogRead(pidRelayDescs[i].pinAnalIn);
+                        //pidRelayDescs[i].inputVar = tempCalc(analogRead(pidRelayDescs[i].pinAnalIn), i);
 			//pidRelayDescs[i].inputVar = tempCalc(adc.newAnalogRead(pidRelayDescs[i].pinAnalIn), i);
                         //newAnalogRead breaks pid, probably a timing thing
 

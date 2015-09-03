@@ -327,7 +327,7 @@ class Arduino(InstrumentinoController):
         self._sendData('Reset', wait=True)
         time.sleep(1)
         
-    def BlinkPin(self, pin, ms=500):
+    def BlinkPin(self, pin, ms=2000):
         '''
         Start blinking a pin on the Arduino.
         This may be used to blink the LED on the board (pin 13), which might serve as an indication that the Arduino is still running.
@@ -475,6 +475,61 @@ class Arduino(InstrumentinoController):
             print(diff)
         return average
         
+    def pidCalcs(self, pin, A,  B, C, R, goalTemp):
+        #determines the approx analog value for the goal temperature
+        ansTemp = 0
+        lastVal = 500
+        anVal = 600
+        
+        while abs(goalTemp-ansTemp)>10:
+            print(goalTemp-ansTemp)
+            valDiff = abs((anVal-lastVal)/2)
+            lastVal = anVal
+            if goalTemp>ansTemp:
+                anVal = anVal + 10
+            if goalTemp<ansTemp:
+                anVal = anVal -10
+            if anVal > 1023:
+                anVal = 1023
+            if anVal < 0:
+                anVal = 1
+            ansTemp = self.pidTempCalcs(A, B, C, R, anVal)
+            print(ansTemp)
+            print(anVal)
+        while abs(goalTemp-ansTemp)>0.5:
+            print(goalTemp-ansTemp)
+            valDiff = abs((anVal-lastVal)/2)
+            lastVal = anVal
+            if goalTemp>ansTemp:
+                anVal = anVal + 1
+            if goalTemp<ansTemp:
+                anVal = anVal -1
+            if anVal > 1023:
+                anVal = 1023
+            if anVal < 0:
+                anVal = 1
+            ansTemp = self.pidTempCalcs(A, B, C, R, anVal)
+            print(ansTemp)
+            print(anVal)
+        return anVal
+        
+    def pidTempCalcs(self, A, B, C, R, anVal):
+        res = float(R/((1023./anVal)-1.)) if anVal != 1023 else 1
+        R1 = (np.log(res))
+        R3 = R1*R1*R1
+
+        tmp = A+B*R1+C*R3 if R3 != None else 0
+        tmp = (1/tmp)-273.15 if tmp != None and tmp != 0 else 0
+        time.sleep(0.001)
+        if np.isnan(tmp):
+            return 0
+        else:
+            return float(tmp) if tmp !=None else 0
+        
+        return tmp if tmp != None else 0    
+            
+            
+        
    
 # base class and variables
 class SysVarDigitalArduino(SysVarDigital):
@@ -505,6 +560,7 @@ class SysVarDigitalArduino(SysVarDigital):
     def BlinkFunc(self, blinkMs):
         if self.pin != None:
             self.GetController().BlinkPin(self.pin, ms=blinkMs)
+           
             
 
 class ArduinoI2cDac():
@@ -541,7 +597,7 @@ class SysVarAnalogArduino(SysVarAnalog):
             self.GetController().PinModeOut(self.pinOut)
             if self.highFreqPWM:
                 self.GetController().SetHighFreqPwm(self.pinOut)
-        self.recentT = [20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20]
+        self.recentT = [20, 20, 20, 20, 20, 20, 20, 20, 20]
         self.varis = self.GetController().thermistorVars(self.pinIn)
     
     def GetUnipolarRange(self):
@@ -553,12 +609,13 @@ class SysVarAnalogArduino(SysVarAnalog):
             return (self.range[0] + (self.range[1] - self.range[0]) * fraction) if fraction != None else None
         else:
             #calculate temperature
+            time.sleep(0.005)
             tmp = self.GetController().tempCalcs(self.pinIn, self.varis[0], self.varis[1], self.varis[2], self.varis[3])
             self.recentT.append(tmp)
             del self.recentT[0]
             currentT = list(self.recentT)
             currentT.sort()
-            currentT = np.average(currentT[3:13])
+            currentT = np.average(currentT[2:7])
             currentT = float(currentT)
             if np.isnan(currentT):
                 return 0
@@ -645,13 +702,14 @@ class SysVarPidRelayArduino(SysVarAnalog):
         self.therm = therm
         self.recentT = []
         self.varis = [0, 0, 0, 0]
+
         
         
     def FirstTimeOnline(self):
         self.GetController().PidRelayCreate(self.pidVar, self.pinIn, self.pinDigiOut, self.windowSizeMs, self.kp, self.ki, self.kd)
         self.GetController().PidRelayEnable(self.pidVar, 0)
         time.sleep(0.05)
-        self.recentT = [20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20]
+        self.recentT = [20, 20, 20, 20, 20, 20, 20, 20, 20]
         self.varis = self.GetController().thermistorVars(self.pinIn)
     def GetFunc(self):
         if self.therm is False:
@@ -659,14 +717,14 @@ class SysVarPidRelayArduino(SysVarAnalog):
             return (self.range[0] + (self.range[1] - self.range[0]) * fraction) if fraction != None else None
         else:
             #calculate temperature
-            time.sleep(0.005)
+            time.sleep(0.01)
             print("GetFunc")
             tmp = self.GetController().tempCalcs(self.pinIn, self.varis[0], self.varis[1], self.varis[2], self.varis[3])
             self.recentT.append(tmp)
             del self.recentT[0]
             currentT = list(self.recentT)
             currentT.sort()
-            currentT = np.average(currentT[3:13])
+            currentT = np.average(currentT[2:7])
             currentT = float(currentT)
             if np.isnan(currentT):
                 return 0
@@ -680,8 +738,8 @@ class SysVarPidRelayArduino(SysVarAnalog):
     def SetFunc(self, value):
         # write the setpoint in the range of the analog input pin
         # changed instrumentino so now arduino does temp calcs
-
-        self.GetController().PidRelaySet(self.pidVar, value)
+        goalTemp = self.GetController().pidCalcs(self.pinIn, self.varis[0], self.varis[1], self.varis[2], self.varis[3], value)
+        self.GetController().PidRelaySet(self.pidVar, goalTemp)
         time.sleep(0.1)
         
         #based on difference between setTemp and temp, find amount of time t to activate heater
