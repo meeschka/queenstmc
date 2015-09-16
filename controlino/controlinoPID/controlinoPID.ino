@@ -119,7 +119,7 @@ unsigned long blinkingDelayMs;
 
 //Oversampling Variables
 byte pin = A0;
-byte bitsOfResolution = 14; //commanded oversampled resolution
+byte bitsOfResolution = 13; //commanded oversampled resolution
 unsigned long numSamplesToAvg = 1; //number of samples AT THE OVERSAMPLED RESOLUTION that you want to take and average
 ADC_prescaler_t ADCSpeed = ADC_FAST;
 /*Speed options to store into ADCSpeed are as follows:

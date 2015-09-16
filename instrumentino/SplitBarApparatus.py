@@ -36,8 +36,8 @@ pinDigiOutHeater2Relay = 9
 pinVoltMax = 5.12
 pinVoltMin = 0 
 
-valMax = 80
-valMin = 20
+valMax = 8000
+valMin = 5000
 '''
 *** System components
 '''

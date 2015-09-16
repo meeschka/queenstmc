@@ -193,18 +193,18 @@ class Arduino(InstrumentinoController):
         '''
         Takes the average of 6 values, and converts the analog reading into resistance
         '''   
-        #R = [10125, 10028, 99761, 10096, 9989, 9999, 10029, 10027, 10017, 9993, 9921, 9931]        
+        #R = [10117, 10021, 9956, 10071, 9985, 9994, 10029, 10027, 10017, 9993, 9921, 9931]        
         time.sleep(0.01)
         result = self.AnalogRead(pin)
         if result is None:
             result = 0;
-        if result is 16383:
+        if result is 8191:
             return 0.
         if result is 0:
             return 0.
 
        
-        result = float(R/((16383./result)-1.)) if result != 16383 else 0
+        result = float(R/((8191./result)-1.)) if result != 8191 else 0
         return result if result!= None else 0.            
  
     def DigitalWriteHigh(self, pin):
@@ -415,22 +415,23 @@ class Arduino(InstrumentinoController):
         #ie, pin at A0 is the first thermistor, second is at A1, etc...
         #if you want to use differnt analog pins, modify thermistorVars to take a thermName or something
 
-        A = (5.7869E-03,5.6757E-03,7.3853E-03,6.1484E-03,6.1672E-03,5.9734E-03)
-        B = (-2.7271E-04,-2.5713E-04,-3.9374E-04,-3.2742E-04,-3.2992E-04,-3.0190E-04)
-        C = (1.1184E-07,6.3526E-08,3.3169E-07,2.9154E-07,2.9495E-07,2.0753E-07)
-        R = [10125, 10028, 99761, 10096, 9989, 9999, 10029, 10027, 10017, 9993, 9921, 9931]        
+        A = (50.005208082,0.005993876,0.00634083,0.005658727,0.005765544,0.00567612)
+        B = (-0.000182972,-0.000302782,-0.000355379,-0.000252216,-0.000266412,-0.000254671)
+        C = (-2.01189E-07,2.00686E-07,3.75614E-07,3.37575E-08,6.70583E-08,4.09928E-08)
+        R = [10117, 10021, 9956, 10071, 9985, 9994, 10029, 10027, 10017, 9993, 9921, 9931]        
         
         varis = (A[pin], B[pin], C[pin], R[pin])
         return varis if varis!= None else 0   
                 
     def tempCalcs(self, pin, A, B, C, R):
-        '''
+        
         self.varis = self.thermistorVars(pin)
         self.A = self.varis[0]
         self.B = self.varis[1]
         self.C = self.varis[2]
-        '''
+        
         res = self.AnalogReadMultiRes(pin, R)
+        
         
         if res > 0:
             R1 = (np.log(res)) if res != None else 0
@@ -448,6 +449,7 @@ class Arduino(InstrumentinoController):
             return float(tmp) if tmp !=None else 0
         
         return tmp if tmp != None else 0         
+        
         '''
         #to return resistance values for thermistor calibration
 
@@ -482,8 +484,6 @@ class Arduino(InstrumentinoController):
         anVal = 600
         
         while abs(goalTemp-ansTemp)>10:
-            print(goalTemp-ansTemp)
-            valDiff = abs((anVal-lastVal)/2)
             lastVal = anVal
             if goalTemp>ansTemp:
                 anVal = anVal + 10
@@ -497,9 +497,6 @@ class Arduino(InstrumentinoController):
             print(ansTemp)
             print(anVal)
         while abs(goalTemp-ansTemp)>0.5:
-            print(goalTemp-ansTemp)
-            valDiff = abs((anVal-lastVal)/2)
-            lastVal = anVal
             if goalTemp>ansTemp:
                 anVal = anVal + 1
             if goalTemp<ansTemp:
@@ -509,8 +506,6 @@ class Arduino(InstrumentinoController):
             if anVal < 0:
                 anVal = 1
             ansTemp = self.pidTempCalcs(A, B, C, R, anVal)
-            print(ansTemp)
-            print(anVal)
         return anVal
         
     def pidTempCalcs(self, A, B, C, R, anVal):
