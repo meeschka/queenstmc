@@ -557,7 +557,8 @@ void loop() {
 	// Take care of blinking heater - set time that heater is on for every 5000ms window
 	if (startBlinking == true) {
 		curMs = millis();
-		if (curMs - blinkLastChangeMs > blinkingDelayMs*2)
+		//if (curMs - blinkLastChangeMs > blinkingDelayMs*2) this is for even blinks (time on = time off)
+                if (curMs - blinkLastChangeMs > 5000)
                         {
 			blinkLastChangeMs = curMs;
                         }
