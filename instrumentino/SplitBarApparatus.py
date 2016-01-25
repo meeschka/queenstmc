@@ -36,8 +36,8 @@ pinDigiOutHeater2Relay = 9
 pinVoltMax = 5.12
 pinVoltMin = 0 
 
-valMax = 80
-valMin = 20
+valMax = 70
+valMin = 30
 '''
 *** System components
 '''
@@ -45,8 +45,9 @@ valMin = 20
 #heatThermistor1 = AnalogPinCallibration('Heater Temperature', [15, 1000], pinAnalInThermometerInHeat, pinVoltMax, pinVoltMin)
 
 
-heatThermistor1 = PidControlledThermistor('Heater 1', [valMin, valMax], pinAnalInThermometerHeat1, pinDigiOutHeater1Relay, 0.25, 5.05, 1, 5000, 500, 4, 1)
-heatThermistor2 = PidControlledThermistor('Heater 2', [valMin, valMax], pinAnalInThermometerHeat2, pinDigiOutHeater2Relay, 0.25, 5.05, 2, 5000, 45.0, 4.2, 120)
+heatThermistor1 = PidControlledThermistor('Heater 1', [valMin, valMax], pinAnalInThermometerHeat1, pinDigiOutHeater1Relay, 0.25, 5.05, 1, 10000, 50, 0.15, 2.5
+)
+heatThermistor2 = PidControlledThermistor('Heater 2', [valMin, valMax], pinAnalInThermometerHeat2, pinDigiOutHeater2Relay, 0.25, 5.05, 2, 10000, 45.0, 4.2, 120)
 
 
 
@@ -95,7 +96,7 @@ class TuneThermostat1(SysAction):
                     heatThermistor1.vars['enable'].Set('on')
                     cfg.Sleep(5*60)
                     
-                   
+                           
 class SetThermostat2(SysAction):
     def __init__(self):
         self.temp = SysActionParamFloat(heatThermistor2.vars['T'])
@@ -149,6 +150,19 @@ class heatPulse(SysAction):
 
 class blinkHeat(SysAction):
     def __init__(self):
+        self.timePercent = SysActionParamInt('blink time % of 10s', [0, 100])
+              
+        
+        #self.pulseTime = SysActionParamInt('pulse time, ms', [0, 5000])
+        #self.milliseconds = SysActionParamFloat(name='blink time ms', range=[0, 2000])
+        self.trigger = SysActionParamInt('heat blink on?', [0, 1])
+        SysAction.__init__(self, 'Blink Heat', (self.timePercent, self.trigger))
+    def Command(self):
+        if self.trigger.Get():
+            digiPins1.vars['Heat Element 1'].BlinkFunc(self.timePercent.Get())
+'''
+class blinkHeat(SysAction):
+    def __init__(self):
         self.milliseconds = SysActionParamInt('blink time ms', [0, 5000])
               
         
@@ -159,9 +173,7 @@ class blinkHeat(SysAction):
     def Command(self):
         if self.trigger.Get():
             digiPins1.vars['Heat Element 1'].BlinkFunc(self.milliseconds.Get())
-
-
-        
+'''        
 def closeAll():
     heatThermistor1.vars['enable'].Set('off')
     heatThermistor2.vars['enable'].Set('off')

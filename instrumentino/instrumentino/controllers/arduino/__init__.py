@@ -327,13 +327,17 @@ class Arduino(InstrumentinoController):
         self._sendData('Reset', wait=True)
         time.sleep(1)
         
-    def BlinkPin(self, pin, ms=2000):
+    def BlinkPin(self, pin, ms=100):
         '''
         Start blinking a pin on the Arduino.
         This may be used to blink the LED on the board (pin 13), which might serve as an indication that the Arduino is still running.
         pin - which pin to blink
         ms - how many milliseconds between each blink
         '''
+        #Where ms is now the % of a 10s period that the heater is on
+        if ms > 100:
+            ms=100
+        ms = 10000*(ms/100)
         self._sendData('BlinkPin %d %d'%(pin, ms), wait=True)
         
         
