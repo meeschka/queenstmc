@@ -22,12 +22,12 @@ from instrumentino.SteadyStateModule import SteadyStateClass
 pinAnalInThermometer1 = int(2)
 pinAnalInThermometer2 = int(3)
 
-pinAnalInThermometer3 = int(4)
-pinAnalInThermometer4 = int(5)
+pinAnalInThermometer3 = int(0)
+pinAnalInThermometer4 = int(1)
 
 
-pinAnalInThermometerHeat1 = int(0)
-pinAnalInThermometerHeat2 = int(1)
+pinAnalInThermometerHeat1 = int(4)
+pinAnalInThermometerHeat2 = int(5)
 
 
 pinDigiOutHeater1Relay = 8

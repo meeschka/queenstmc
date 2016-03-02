@@ -184,29 +184,82 @@ class Arduino(InstrumentinoController):
         Returns: value between 0-1023  
         '''
         # Get value from cache if possible, and if not, add it to the wish-list
+        
+                
         try:
             return self.pinValuesCache['A' + str(pin)]
         except KeyError:
             self.pinValuesCache['A' + str(pin)] = 0
+            
+    def AdcRead1(self, pin):
+        '''
+        Read the voltage level of an analog input pin using a 10-bit value
         
-    def AnalogReadMultiRes(self, pin, R):
+        Returns: value between 0-1023  
+        '''
+        # Get value from cache if possible, and if not, add it to the wish-list
+        
+                
+        try:
+            return self.pinValuesCache['B' + str(pin)]
+        except KeyError:
+            self.pinValuesCache['B' + str(pin)] = 0
+            
+    def AdcRead2(self, pin):
+        '''
+        Read the voltage level of an analog input pin using a 10-bit value
+        
+        Returns: value between 0-1023  
+        '''
+        # Get value from cache if possible, and if not, add it to the wish-list
+        
+        pin = pin-4
+                
+        try:
+            return self.pinValuesCache['C' + str(pin)]
+        except KeyError:
+            self.pinValuesCache['C' + str(pin)] = 0
+        
+    def AnalogReadADCRes(self, pin, R):
         '''
         Takes the average of 6 values, and converts the analog reading into resistance
-        '''   
+        '''  
+        
         #R = [10117, 10021, 9956, 10071, 9985, 9994, 10029, 10027, 10017, 9993, 9921, 9931]        
-        time.sleep(0.01)
-        result = self.AnalogRead(pin)
+        if pin <4:
+            result = self.AdcRead1(pin)
+        else:
+            result = self.AdcRead2(pin)
+        print(result)
         if result is None:
-            result = 0;
-        if result is 8191:
             return 0.
-        if result is 0:
+        if result is 32767:
             return 0.
-
-       
-        result = float(R/((8191./result)-1.)) if result != 8191 else 0
+        if result <= 0:
+            return 0.
+        print(result)
+        result = float(R/((32767./result)-1.)) if result != 32767 else 0
         return result if result!= None else 0.            
- 
+    
+    def AnalogReadPIDRes(self, pin, R):
+        '''
+        Takes the average of 6 values, and converts the analog reading into resistance
+        '''  
+        
+        #R = [10117, 10021, 9956, 10071, 9985, 9994, 10029, 10027, 10017, 9993, 9921, 9931]        
+        result = self.AnalogRead(pin)
+        print(result)
+        if result is None:
+            return 0.
+        if result is 1023:
+            return 0.
+        if result <= 0:
+            return 0.
+        print(result)
+        result = float(R/((1023./result)-1.)) if result != 1023 else 0
+        return result if result!= None else 0.            
+  
+  
     def DigitalWriteHigh(self, pin):
         '''
         Set the voltage level of a digital output pin to the maximum (HIGH level)
@@ -346,7 +399,8 @@ class Arduino(InstrumentinoController):
         Send a list of values over the I2C bus
         '''
         self._sendData('I2cWrite %d %s'%(address, ' '.join(str(n) for n in values)), wait=True)
-    
+        
+   
     def _sendData(self, txData, addLineBreak=True, lock=True, wait=False, log=True):
         '''
         This function should be called only in this class
@@ -427,14 +481,17 @@ class Arduino(InstrumentinoController):
         varis = (A[pin], B[pin], C[pin], R[pin])
         return varis if varis!= None else 0   
                 
-    def tempCalcs(self, pin, A, B, C, R):
+    def tempCalcs(self, pin, A, B, C, R, adc):
         
         self.varis = self.thermistorVars(pin)
         self.A = self.varis[0]
         self.B = self.varis[1]
         self.C = self.varis[2]
         
-        res = self.AnalogReadMultiRes(pin, R)
+        if adc == 1: 
+            res = self.AnalogReadADCRes(pin, R)
+        else:
+            res = self.AnalogReadPIDRes(pin, R)
         
         
         if res > 0:
@@ -513,7 +570,7 @@ class Arduino(InstrumentinoController):
         return anVal
         
     def pidTempCalcs(self, A, B, C, R, anVal):
-        res = float(R/((1023./anVal)-1.)) if anVal != 1023 else 1
+        res = long(R/((1023./anVal)-1.)) if anVal != 1023 else 1
         R1 = (np.log(res))
         R3 = R1*R1*R1
 
@@ -523,7 +580,7 @@ class Arduino(InstrumentinoController):
         if np.isnan(tmp):
             return 0
         else:
-            return float(tmp) if tmp !=None else 0
+            return long(tmp) if tmp !=None else 0
         
         return tmp if tmp != None else 0    
             
@@ -609,7 +666,7 @@ class SysVarAnalogArduino(SysVarAnalog):
         else:
             #calculate temperature
             time.sleep(0.005)
-            tmp = self.GetController().tempCalcs(self.pinIn, self.varis[0], self.varis[1], self.varis[2], self.varis[3])
+            tmp = self.GetController().tempCalcs(self.pinIn, self.varis[0], self.varis[1], self.varis[2], self.varis[3],1)
             self.recentT.append(tmp)
             del self.recentT[0]
             currentT = list(self.recentT)
@@ -717,8 +774,7 @@ class SysVarPidRelayArduino(SysVarAnalog):
         else:
             #calculate temperature
             time.sleep(0.01)
-            print("GetFunc")
-            tmp = self.GetController().tempCalcs(self.pinIn, self.varis[0], self.varis[1], self.varis[2], self.varis[3])
+            tmp = self.GetController().tempCalcs(self.pinIn, self.varis[0], self.varis[1], self.varis[2], self.varis[3], 0)
             self.recentT.append(tmp)
             del self.recentT[0]
             currentT = list(self.recentT)

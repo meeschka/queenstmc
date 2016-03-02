@@ -9,7 +9,7 @@ from instrumentino.action import SysAction, SysActionParamTime, SysActionParamFl
 from instrumentino.controllers.arduino import SysVarDigitalArduino
 from instrumentino.controllers.arduino.pins import DigitalPins, AnalogPins
 from instrumentino.controllers.arduino.pid_thermistor import PidControlledThermistor
-from instrumentino.controllers.arduino.thermistor import thermistorUnipolar
+from instrumentino.controllers.arduino.thermistor import thermistor
 
 
 '''
