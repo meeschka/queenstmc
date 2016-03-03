@@ -9,8 +9,8 @@ from instrumentino.action import SysAction, SysActionParamTime, SysActionParamFl
 from instrumentino.controllers.arduino import Arduino
 from instrumentino.controllers.arduino import SysVarDigitalArduino
 from instrumentino.controllers.arduino.pins import DigitalPins, AnalogPins
-from instrumentino.controllers.arduino.pid_thermistor import PidControlledThermistor
-from instrumentino.controllers.arduino.thermistor import thermistor
+from instrumentino.controllers.arduino.pid_thermistor import PidCalliThermistor
+from instrumentino.controllers.arduino.thermistor import resistorADC
 from instrumentino.SteadyStateModule import SteadyStateClass
 
 
@@ -19,11 +19,11 @@ from instrumentino.SteadyStateModule import SteadyStateClass
 '''
 # Arduino pin assignments
 
-pinAnalInThermometer1 = int(0)
-pinAnalInThermometer2 = int(1)
+pinAnalInThermometer1 = int(2)
+pinAnalInThermometer2 = int(3)
 
-pinAnalInThermometer3 = int(2)
-pinAnalInThermometer4 = int(3)
+pinAnalInThermometer3 = int(0)
+pinAnalInThermometer4 = int(1)
 
 
 pinAnalInThermometerHeat1 = int(4)
@@ -45,17 +45,17 @@ valMin = 30
 #heatThermistor1 = AnalogPinCallibration('Heater Temperature', [15, 1000], pinAnalInThermometerInHeat, pinVoltMax, pinVoltMin)
 
 
-heatThermistor1 = PidControlledThermistor('Heater 1', [valMin, valMax], pinAnalInThermometerHeat1, pinDigiOutHeater1Relay, 0.25, 5.05, 1, 10000, 50, 0.15, 2.5
+heatThermistor1 = PidCalliThermistor('Heater 1', [valMin, valMax], pinAnalInThermometerHeat1, pinDigiOutHeater1Relay, 0.25, 5.05, 1, 10000, 50, 0.15, 2.5
 )
-heatThermistor2 = PidControlledThermistor('Heater 2', [valMin, valMax], pinAnalInThermometerHeat2, pinDigiOutHeater2Relay, 0.25, 5.05, 2, 10000, 45.0, 4.2, 120)
+heatThermistor2 = PidCalliThermistor('Heater 2', [valMin, valMax], pinAnalInThermometerHeat2, pinDigiOutHeater2Relay, 0.25, 5.05, 2, 10000, 45.0, 4.2, 120)
 
 
 
-sample1Thermometer = thermistor('Sample Temperature 1', (valMin, valMax), pinAnalInThermometer1, pinVoltMax, pinVoltMin)
-sample2Thermometer = thermistor('Sample Temperature 2', (valMin, valMax), pinAnalInThermometer2, pinVoltMax, pinVoltMin)
+sample1Thermometer = resistorADC('Sample Temperature 1', (valMin, valMax), pinAnalInThermometer1, pinVoltMax, pinVoltMin)
+sample2Thermometer = resistorADC('Sample Temperature 2', (valMin, valMax), pinAnalInThermometer2, pinVoltMax, pinVoltMin)
 
-sample3Thermometer = thermistor('Sample Temperature 3', (valMin, valMax), pinAnalInThermometer3,  pinVoltMax, pinVoltMin)
-sample4Thermometer = thermistor('Sample Temperature 4', (valMin, valMax), pinAnalInThermometer4,  pinVoltMax, pinVoltMin)
+sample3Thermometer = resistorADC('Sample Temperature 3', (valMin, valMax), pinAnalInThermometer3,  pinVoltMax, pinVoltMin)
+sample4Thermometer = resistorADC('Sample Temperature 4', (valMin, valMax), pinAnalInThermometer4,  pinVoltMax, pinVoltMin)
 
 digiPins1 = DigitalPins('digital pins', (SysVarDigitalArduino('Heat Element 1', pinDigiOutHeater1Relay),))
 digiPins2 = DigitalPins('digital pins', (SysVarDigitalArduino('Heat Element 2', pinDigiOutHeater2Relay),))

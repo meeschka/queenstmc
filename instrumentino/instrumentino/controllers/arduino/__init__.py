@@ -230,14 +230,14 @@ class Arduino(InstrumentinoController):
             result = self.AdcRead1(pin)
         else:
             result = self.AdcRead2(pin)
-        print(result)
+
         if result is None:
             return 0.
         if result is 32767:
             return 0.
         if result <= 0:
             return 0.
-        print(result)
+
         result = float(R/((32767./result)-1.)) if result != 32767 else 0
         return result if result!= None else 0.            
     
@@ -245,18 +245,19 @@ class Arduino(InstrumentinoController):
         '''
         Takes the average of 6 values, and converts the analog reading into resistance
         '''  
-        
+        print("Line248")
         #R = [10117, 10021, 9956, 10071, 9985, 9994, 10029, 10027, 10017, 9993, 9921, 9931]        
         result = self.AnalogRead(pin)
-        print(result)
+
         if result is None:
             return 0.
         if result is 1023:
             return 0.
         if result <= 0:
             return 0.
-        print(result)
+
         result = float(R/((1023./result)-1.)) if result != 1023 else 0
+        print(result)
         return result if result!= None else 0.            
   
   
@@ -570,7 +571,7 @@ class Arduino(InstrumentinoController):
         return anVal
         
     def pidTempCalcs(self, A, B, C, R, anVal):
-        res = long(R/((1023./anVal)-1.)) if anVal != 1023 else 1
+        res = float(R/((1023./anVal)-1.)) if anVal != 1023 else 1
         R1 = (np.log(res))
         R3 = R1*R1*R1
 
@@ -580,7 +581,7 @@ class Arduino(InstrumentinoController):
         if np.isnan(tmp):
             return 0
         else:
-            return long(tmp) if tmp !=None else 0
+            return float(tmp) if tmp !=None else 0
         
         return tmp if tmp != None else 0    
             
@@ -661,8 +662,8 @@ class SysVarAnalogArduino(SysVarAnalog):
     
     def GetFunc(self):
         if self.therm is False:
-            fraction = self.GetController().AnalogReadFraction(self.pinIn, self.pinInVoltsMax, self.pinInVoltsMin)
-            return (self.range[0] + (self.range[1] - self.range[0]) * fraction) if fraction != None else None
+            fraction = int(self.GetController().AnalogReadADCRes(self.pinIn, self.varis[3]))
+            return float(32767/fraction) if fraction != None else None
         else:
             #calculate temperature
             time.sleep(0.005)
@@ -769,7 +770,7 @@ class SysVarPidRelayArduino(SysVarAnalog):
         self.varis = self.GetController().thermistorVars(self.pinIn)
     def GetFunc(self):
         if self.therm is False:
-            fraction = self.GetController().AnalogReadFraction(self.pinIn, self.pinInVoltsMax, self.pinInVoltsMin)
+            fraction = self.GetController().AnalogRead(self.pinIn)
             return (self.range[0] + (self.range[1] - self.range[0]) * fraction) if fraction != None else None
         else:
             #calculate temperature
